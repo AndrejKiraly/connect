@@ -1,0 +1,21 @@
+services:
+  db:
+    image: 'postgres:17'
+    container_name: connect-postgres
+    environment:
+      POSTGRES_DB: connect
+      POSTGRES_USER: connect
+      POSTGRES_PASSWORD: connect
+    ports:
+      - '5433:5432'
+    volumes:
+      - connect-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U connect -d connect']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  connect-db-data:
