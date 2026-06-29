@@ -1,10 +1,7 @@
-package com.andrejKir.connect.accounts;
-
-import jakarta.persistence.Enumerated;
+package com.andrejKir.connect.accounts.enums;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalAmount;
 import java.util.Optional;
 
 public enum PostLifespan {

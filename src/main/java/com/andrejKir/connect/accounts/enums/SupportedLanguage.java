@@ -1,10 +1,10 @@
-package com.andrejKir.connect.accounts;
+package com.andrejKir.connect.accounts.enums;
 
 import java.util.Locale;
 
 public enum SupportedLanguage {
     EN(Locale.ENGLISH),
-    SK(Locale.of("sk","Slovakia")),
+    SK(Locale.of("sk")),
     DE(Locale.GERMAN);
 
 
