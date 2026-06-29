@@ -1,22 +1,20 @@
 package com.andrejKir.connect.accounts;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@Entity
 public class AppUserSettings {
 
     @Id
-    private UUID userId;
+    private UUID appUserId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private SupportedLanguage locale;
+    private SupportedLanguage language;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
