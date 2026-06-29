@@ -1,5 +1,7 @@
-package com.andrejKir.connect.accounts;
+package com.andrejKir.connect.accounts.entity;
 
+import com.andrejKir.connect.accounts.enums.PostLifespan;
+import com.andrejKir.connect.accounts.enums.SupportedLanguage;
 import jakarta.persistence.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
