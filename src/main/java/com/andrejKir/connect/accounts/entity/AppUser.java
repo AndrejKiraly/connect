@@ -17,7 +17,7 @@ import java.util.UUID;
 public class AppUser {
 
     @Id
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
+    @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
 
     @Column(unique = true, nullable = false, length = 40)
@@ -50,4 +50,54 @@ public class AppUser {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    protected AppUser() {
+    }
+
+    public AppUser(String username, String email, String passwordHash, String displayName, String firstName, String lastName, LocalDate birthDate) {
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.displayName = displayName;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.birthDate = birthDate;
+    }
+
+    public UUID getId(){
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getPasswordHash() {return passwordHash;}
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }
