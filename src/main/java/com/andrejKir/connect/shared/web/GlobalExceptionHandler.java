@@ -2,14 +2,20 @@ package com.andrejKir.connect.shared.web;
 
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
-import com.andrejKir.connect.accounts.exception.InvalidCredentialsException;
+import com.andrejKir.connect.shared.exception.RateLimitExceededException;
+import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
+import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
+import com.andrejKir.connect.social.exception.FriendshipRequestOnCooldownException;
 import com.andrejKir.connect.social.exception.SelfFriendshipException;
 import com.andrejKir.connect.shared.exception.LocalizedException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,10 +38,19 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ProblemDetail handleInvalidCredentials(LocalizedException e){
-        String message = resolve(e);
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthentication(AuthenticationException e){
+        String message = messageSource.getMessage("error.invalid.credentials", null, LocaleContextHolder.getLocale());
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, message);
+    }
+
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleRateLimit(RateLimitExceededException e){
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, resolve(e));
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(e.getRetryAfterSeconds()))
+                .body(problemDetail);
     }
 
     @ExceptionHandler(SelfFriendshipException.class)
@@ -43,8 +58,13 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
     }
 
-    @ExceptionHandler(FriendshipNotPendingException.class)
-    public ProblemDetail handleFriendshipNotPending(LocalizedException e){
+    @ExceptionHandler({
+            FriendshipRequestAlreadyPendingException.class,
+            AlreadyFriendsException.class,
+            FriendshipRequestOnCooldownException.class,
+            FriendshipNotPendingException.class
+    })
+    public ProblemDetail handleFriendshipConflict(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, resolve(e));
     }
 
