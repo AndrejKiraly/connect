@@ -1,2 +1,4 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+
+src/main/resources/security/common_passwords.txt linguist-generated=true
