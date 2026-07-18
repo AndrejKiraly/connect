@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import org.jspecify.annotations.Nullable;
 
 
 import java.time.Instant;
@@ -99,5 +100,9 @@ public class AppUser {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public void changePassword(String passwordHash){
+        this.passwordHash = passwordHash;
     }
 }

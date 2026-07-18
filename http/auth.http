@@ -1,0 +1,63 @@
+### Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "jozko@example.com",
+  "username": "jozko",
+  "password": "Heslo1234",
+  "displayName": "Jozko",
+  "firstName": "Jozef",
+  "lastName": "Mrkvicka",
+  "birthDate": "1998-05-01"
+}
+
+> {%
+    client.test("register", () => client.assert(response.status === 201 || response.status === 409));
+%}
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "jozko",
+  "password": "Heslo1234"
+}
+
+> {%
+    client.test("login 200", () => client.assert(response.status === 200));
+%}
+
+### Me
+GET {{baseUrl}}/users/me
+
+> {%
+    client.test("me 200", () => client.assert(response.status === 200));
+%}
+
+### Login zle heslo
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "jozko",
+  "password": "zle-heslo"
+}
+
+> {%
+    client.test("login 401", () => client.assert(response.status === 401));
+%}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+
+> {%
+    client.test("logout 204", () => client.assert(response.status === 204));
+%}
+
+### Me po logoute
+GET {{baseUrl}}/users/me
+
+> {%
+    client.test("me 401", () => client.assert(response.status === 401));
+%}

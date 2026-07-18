@@ -17,5 +17,13 @@ services:
       retries: 5
     restart: unless-stopped
 
+  mailpit:
+    image: 'axllent/mailpit:v1.29'
+    container_name: connect-mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    restart: unless-stopped
+
 volumes:
   connect-db-data:

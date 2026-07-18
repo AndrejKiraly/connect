@@ -2,6 +2,7 @@ package com.andrejKir.connect.shared.web;
 
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
+import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
 import com.andrejKir.connect.shared.exception.RateLimitExceededException;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
@@ -66,6 +67,11 @@ public class GlobalExceptionHandler {
     })
     public ProblemDetail handleFriendshipConflict(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, resolve(e));
+    }
+
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ProblemDetail handleInvalidPasswordResetToken(LocalizedException e){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
