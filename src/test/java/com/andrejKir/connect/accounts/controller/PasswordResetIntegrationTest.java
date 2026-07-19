@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -46,9 +49,12 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
     AppUserRepository appUserRepository;
     @Autowired
     PasswordResetTokenRepository passwordResetTokenRepository;
+    @Autowired
+    JdbcIndexedSessionRepository sessionRepository;
 
     @BeforeEach
     void seedKnownUser() {
+        sessionRepository.findByPrincipalName(USERNAME).keySet().forEach(sessionRepository::deleteById);
         passwordResetTokenRepository.deleteAll();
         appUserRepository.deleteAll();
         appUserService.registerUser(new RegisterRequest(
@@ -103,6 +109,17 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
         forgotPassword(EMAIL).andExpect(status().isOk());
 
         verify(passwordResetMailer).sendResetLink(eq(EMAIL), any());
+    }
+
+    @Test
+    void resetPassword_validToken_revokesAllSessions() throws Exception {
+        login(USERNAME, OLD_PASSWORD).andExpect(status().isOk());
+        assertEquals(1, sessionRepository.findByPrincipalName(USERNAME).size());
+
+        forgotPassword(EMAIL).andExpect(status().isOk());
+        resetPassword(captureEmailedToken(), NEW_PASSWORD).andExpect(status().isNoContent());
+
+        assertTrue(sessionRepository.findByPrincipalName(USERNAME).isEmpty());
     }
 
     private static String sha256Hex(String value) throws Exception {
