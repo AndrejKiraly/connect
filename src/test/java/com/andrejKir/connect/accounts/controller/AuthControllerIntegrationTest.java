@@ -15,11 +15,14 @@ import java.time.LocalDate;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String STRONG_PASSWORD = "trombone-sunset-91";
+    private static final String BLOCKLISTED_PASSWORD = "Password123";
+    private static final String TOO_SHORT_PASSWORD = "Qx7!aB9";
 
     private static int ipCounter = 0;
 
@@ -71,6 +74,22 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         register(new RegisterRequest("newuser@example.com", "takenuser", STRONG_PASSWORD,
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void register_blocklistedPassword_returns400() throws Exception {
+        register(new RegisterRequest("weakpass@example.com", "weakpass1", BLOCKLISTED_PASSWORD,
+                "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.password").exists());
+    }
+
+    @Test
+    void register_tooShortPassword_returns400() throws Exception {
+        register(new RegisterRequest("shortpass@example.com", "shortpass1", TOO_SHORT_PASSWORD,
+                "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.password").exists());
     }
 
     private ResultActions login(String usernameOrEmail, String password) throws Exception {
