@@ -4,9 +4,11 @@ import com.andrejKir.connect.accounts.dto.request.ForgotPasswordRequest;
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.dto.request.ResetPasswordRequest;
 import com.andrejKir.connect.accounts.entity.PasswordResetToken;
+import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
 import com.andrejKir.connect.accounts.repository.PasswordResetTokenRepository;
 import com.andrejKir.connect.accounts.service.AppUserService;
+import com.andrejKir.connect.accounts.service.PasswordResetService;
 import com.andrejKir.connect.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +23,15 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,6 +60,8 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
     PasswordResetTokenRepository passwordResetTokenRepository;
     @Autowired
     JdbcIndexedSessionRepository sessionRepository;
+    @Autowired
+    PasswordResetService passwordResetService;
 
     @BeforeEach
     void seedKnownUser() {
@@ -120,6 +131,40 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
         resetPassword(captureEmailedToken(), NEW_PASSWORD).andExpect(status().isNoContent());
 
         assertTrue(sessionRepository.findByPrincipalName(USERNAME).isEmpty());
+    }
+
+    @Test
+    void resetPassword_concurrentRequestsWithSameToken_succeedOnlyOnce() throws Exception {
+        passwordResetService.generatePasswordResetToken(EMAIL);
+        String resetToken = captureEmailedToken();
+
+        int concurrentAttempts = 2;
+        CountDownLatch startGate = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(concurrentAttempts);
+        List<Future<Boolean>> attempts = new ArrayList<>();
+
+        for (int i = 0; i < concurrentAttempts; i++) {
+            attempts.add(executor.submit(() -> {
+                startGate.await();
+                try {
+                    passwordResetService.resetPassword(resetToken, NEW_PASSWORD);
+                    return true;
+                } catch (InvalidPasswordResetTokenException e) {
+                    return false;
+                }
+            }));
+        }
+        startGate.countDown();
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(30, TimeUnit.SECONDS));
+
+        long succeeded = 0;
+        for (Future<Boolean> attempt : attempts) {
+            if (attempt.get()) {
+                succeeded++;
+            }
+        }
+        assertEquals(1, succeeded);
     }
 
     private static String sha256Hex(String value) throws Exception {
