@@ -29,28 +29,32 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordResetMailer passwordResetMailer;
 
     private static final int TOKEN_BYTES = 32;
     private final SecureRandom secureRandom = new SecureRandom();
 
 
     public PasswordResetService(PasswordResetTokenRepository passwordResetTokenRepository,
-                                AppUserRepository appUserRepository, PasswordEncoder passwordEncoder, FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
+                                AppUserRepository appUserRepository, PasswordEncoder passwordEncoder,
+                                FindByIndexNameSessionRepository<? extends Session> sessionRepository, PasswordResetMailer passwordResetMailer) {
         this.sessionRepository = sessionRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordResetMailer = passwordResetMailer;
     }
 
-    public Optional<String> generatePasswordResetToken(String email) {
+    public void generatePasswordResetToken(String email) {
         Optional<AppUser> appUser = appUserRepository.findByEmail(email);
-        if (appUser.isEmpty()){
-            return Optional.empty();
+        if (appUser.isEmpty()) {
+            return;
         }
         String newToken = generatePlaintextToken();
-        PasswordResetToken passwordResetToken = new PasswordResetToken(appUser.get().getId(), hashToken(newToken), Instant.now().plus(15, ChronoUnit.MINUTES));
-        passwordResetTokenRepository.save(passwordResetToken);
-        return Optional.of(newToken);
+        PasswordResetToken prt = new PasswordResetToken(
+                appUser.get().getId(), hashToken(newToken), Instant.now().plus(15, ChronoUnit.MINUTES));
+        passwordResetTokenRepository.save(prt);
+        passwordResetMailer.sendResetLink(email, newToken);
     }
 
     @Transactional

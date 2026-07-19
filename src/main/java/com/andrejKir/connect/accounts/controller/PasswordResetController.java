@@ -6,7 +6,6 @@ import com.andrejKir.connect.accounts.dto.request.ResetPasswordRequest;
 import com.andrejKir.connect.accounts.service.PasswordResetService;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
