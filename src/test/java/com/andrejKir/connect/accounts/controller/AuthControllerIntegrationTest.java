@@ -4,19 +4,12 @@ package com.andrejKir.connect.accounts.controller;
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
 import com.andrejKir.connect.accounts.service.AppUserService;
-import tools.jackson.databind.ObjectMapper;
+import com.andrejKir.connect.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.time.LocalDate;
 
@@ -24,32 +17,23 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.docker.compose.enabled=false")
-@AutoConfigureMockMvc
-@Testcontainers
-public class AuthControllerIntegrationTest {
+public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
+    private static final String STRONG_PASSWORD = "trombone-sunset-91";
 
     private static int ipCounter = 0;
 
     @Autowired
-    MockMvc mockMvc;
-    @Autowired
     AppUserService appUserService;
     @Autowired
     AppUserRepository appUserRepository;
-    @Autowired
-    ObjectMapper objectMapper;
 
     @BeforeEach
     void seedKnownUser() {
         ipCounter++;
         appUserRepository.deleteAll();
         appUserService.registerUser(new RegisterRequest(
-                "taken@example.com", "takenuser", "Password123",
+                "taken@example.com", "takenuser", STRONG_PASSWORD,
                 "LuboAnder", "Lubo", "Ander", LocalDate.of(2000, 1, 1)));
     }
 
@@ -70,21 +54,21 @@ public class AuthControllerIntegrationTest {
 
     @Test
     void register_newUser_returns201() throws Exception {
-        register(new RegisterRequest("newuser@example.com", "newuser1", "Password123",
+        register(new RegisterRequest("newuser@example.com", "newuser1", STRONG_PASSWORD,
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isCreated());
     }
 
     @Test
     void register_duplicateEmail_returns409() throws Exception {
-        register(new RegisterRequest("taken@example.com", "newuser1", "Password123",
+        register(new RegisterRequest("taken@example.com", "newuser1", STRONG_PASSWORD,
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isConflict());
     }
 
     @Test
     void register_duplicateUsername_returns409() throws Exception {
-        register(new RegisterRequest("newuser@example.com", "takenuser", "Password123",
+        register(new RegisterRequest("newuser@example.com", "takenuser", STRONG_PASSWORD,
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isConflict());
     }
