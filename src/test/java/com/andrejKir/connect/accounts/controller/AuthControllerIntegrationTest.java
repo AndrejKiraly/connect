@@ -2,6 +2,9 @@ package com.andrejKir.connect.accounts.controller;
 
 
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
+import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
+import com.andrejKir.connect.accounts.exception.DuplicateUserException;
+import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.support.AbstractIntegrationTest;
@@ -12,7 +15,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -90,6 +102,40 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.password").exists());
+    }
+
+    @Test
+    void registerUser_concurrentRequestsWithSameEmail_succeedOnlyOnce() throws Exception {
+        RegisterRequest request = new RegisterRequest("race@example.com", "raceuser", STRONG_PASSWORD,
+                "RaceUser", "Race", "User", LocalDate.of(2000, 1, 1));
+
+        int concurrentAttempts = 2;
+        CountDownLatch startGate = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(concurrentAttempts);
+        List<Future<Boolean>> attempts = new ArrayList<>();
+
+        for (int i = 0; i < concurrentAttempts; i++) {
+            attempts.add(executor.submit(() -> {
+                startGate.await();
+                try {
+                    appUserService.registerUser(request);
+                    return true;
+                } catch (DuplicateUserException | DuplicateEmailException | DuplicateUsernameException e) {
+                    return false;
+                }
+            }));
+        }
+        startGate.countDown();
+        executor.shutdown();
+        assertTrue(executor.awaitTermination(30, TimeUnit.SECONDS));
+
+        long succeeded = 0;
+        for (Future<Boolean> attempt : attempts) {
+            if (attempt.get()) {
+                succeeded++;
+            }
+        }
+        assertEquals(1, succeeded);
     }
 
     private ResultActions login(String usernameOrEmail, String password) throws Exception {

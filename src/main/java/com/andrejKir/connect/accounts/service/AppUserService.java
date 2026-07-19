@@ -4,10 +4,13 @@ import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
 import com.andrejKir.connect.accounts.entity.AppUser;
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
+import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -22,6 +25,7 @@ public class AppUserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Transactional
     public AppUserResponse registerUser(RegisterRequest request) {
         if (appUserRepository.existsByEmail(request.email())) {
             throw new DuplicateEmailException(request.email());
@@ -39,7 +43,11 @@ public class AppUserService {
                 request.lastName(),
                 request.birthDate()
                 );
-        appUserRepository.save(appUser);
+        try {
+            appUserRepository.saveAndFlush(appUser);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateUserException();
+        }
         return  AppUserResponse.from(appUser);
     }
 

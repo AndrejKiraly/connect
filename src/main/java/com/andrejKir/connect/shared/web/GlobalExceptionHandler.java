@@ -1,6 +1,7 @@
 package com.andrejKir.connect.shared.web;
 
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
+import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
 import com.andrejKir.connect.shared.exception.RateLimitExceededException;
@@ -33,7 +34,7 @@ public class GlobalExceptionHandler {
         this.messageSource = messageSource;
     }
 
-    @ExceptionHandler({DuplicateUsernameException.class, DuplicateEmailException.class})
+    @ExceptionHandler({DuplicateUsernameException.class, DuplicateEmailException.class, DuplicateUserException.class})
     public ProblemDetail handleDuplicate(LocalizedException e){
         String message = resolve(e);
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
