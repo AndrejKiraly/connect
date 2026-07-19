@@ -49,6 +49,10 @@ public class PasswordResetToken {
         return expiresAt.isBefore(now);
     }
 
+    public UUID getId() {
+        return id;
+    }
+
     public UUID getUserId() {
         return userId;
     }

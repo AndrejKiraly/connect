@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -131,6 +132,20 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
         resetPassword(captureEmailedToken(), NEW_PASSWORD).andExpect(status().isNoContent());
 
         assertTrue(sessionRepository.findByPrincipalName(USERNAME).isEmpty());
+    }
+
+    @Test
+    void resetPassword_validToken_invalidatesOtherOutstandingTokens() throws Exception {
+        forgotPassword(EMAIL).andExpect(status().isOk());
+        forgotPassword(EMAIL).andExpect(status().isOk());
+
+        ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
+        verify(passwordResetMailer, times(2)).sendResetLink(eq(EMAIL), tokenCaptor.capture());
+        List<String> issuedTokens = tokenCaptor.getAllValues();
+
+        resetPassword(issuedTokens.get(1), NEW_PASSWORD).andExpect(status().isNoContent());
+
+        resetPassword(issuedTokens.get(0), NEW_PASSWORD).andExpect(status().isBadRequest());
     }
 
     @Test

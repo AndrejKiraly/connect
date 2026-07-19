@@ -69,6 +69,7 @@ public class PasswordResetService {
                 .orElseThrow(InvalidPasswordResetTokenException::new);
         token.markUsed(resetTime);
         user.changePassword(passwordEncoder.encode(newPassword));
+        passwordResetTokenRepository.deleteByUserIdAndIdNot(token.getUserId(), token.getId());
 
         sessionRepository.findByPrincipalName(user.getUsername())
                 .keySet()
