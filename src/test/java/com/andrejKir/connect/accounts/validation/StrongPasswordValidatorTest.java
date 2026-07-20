@@ -1,6 +1,7 @@
 package com.andrejKir.connect.accounts.validation;
 
 import jakarta.validation.ConstraintValidatorContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -16,6 +17,16 @@ class StrongPasswordValidatorTest {
 
     private final ConstraintValidatorContext context = mock(ConstraintValidatorContext.class, RETURNS_DEEP_STUBS);
     private final StrongPasswordValidator validator = new StrongPasswordValidator(new WeakPasswordBlocklist());
+
+    @BeforeEach
+    void initializeWithDefaultBounds() throws NoSuchFieldException {
+        validator.initialize(DefaultBounds.class.getDeclaredField("password").getAnnotation(StrongPassword.class));
+    }
+
+    private static final class DefaultBounds {
+        @StrongPassword
+        String password;
+    }
 
     @Test
     void isValid_null_returnsTrue() {
@@ -34,13 +45,13 @@ class StrongPasswordValidatorTest {
     }
 
     @Test
-    void isValid_seventyTwoCharacters_returnsTrue() {
-        assertTrue(validator.isValid(passwordOfLength(72), context));
+    void isValid_maximumLength_returnsTrue() {
+        assertTrue(validator.isValid(passwordOfLength(128), context));
     }
 
     @Test
-    void isValid_seventyThreeCharacters_returnsFalse() {
-        assertFalse(validator.isValid(passwordOfLength(73), context));
+    void isValid_oneOverMaximumLength_returnsFalse() {
+        assertFalse(validator.isValid(passwordOfLength(129), context));
     }
 
     @Test

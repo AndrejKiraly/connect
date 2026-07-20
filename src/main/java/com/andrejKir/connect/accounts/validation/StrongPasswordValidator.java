@@ -6,20 +6,27 @@ import jakarta.validation.ConstraintValidatorContext;
 
 
 public class StrongPasswordValidator implements ConstraintValidator<StrongPassword, String> {
-    private static final int MIN_LENGTH = 8;
-    private static final int MAX_LENGTH = 72;
 
     private final WeakPasswordBlocklist blocklist;
+
+    private int minLength;
+    private int maxLength;
 
     public StrongPasswordValidator(WeakPasswordBlocklist blocklist) {
         this.blocklist = blocklist;
     }
 
     @Override
+    public void initialize(StrongPassword constraintAnnotation) {
+        this.minLength = constraintAnnotation.min();
+        this.maxLength = constraintAnnotation.max();
+    }
+
+    @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value == null) return true;
 
-        if (value.length() < MIN_LENGTH || value.length()> MAX_LENGTH) return fail(context, "{com.andrejKir.connect.accounts.validation.StrongPassword.length}");
+        if (value.length() < minLength || value.length()> maxLength) return fail(context, "{com.andrejKir.connect.accounts.validation.StrongPassword.length}");
 
         if (blocklist.contains(value)) return fail(context, "{com.andrejKir.connect.accounts.validation.StrongPassword.common}");
 

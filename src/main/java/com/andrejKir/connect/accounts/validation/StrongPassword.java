@@ -13,6 +13,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = StrongPasswordValidator.class)
 public @interface StrongPassword {
+    int MIN_LENGTH = 8;
+    int MAX_LENGTH = 128;
+
+    int min() default MIN_LENGTH;
+    int max() default MAX_LENGTH;
     String message() default "{com.andrejKir.connect.accounts.validation.StrongPassword.message}";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};

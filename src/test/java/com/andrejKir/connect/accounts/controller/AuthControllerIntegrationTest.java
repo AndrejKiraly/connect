@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -102,6 +103,16 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
                 "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.password").exists());
+    }
+
+    @Test
+    void register_tooShortPassword_messageStatesConfiguredBounds() throws Exception {
+        String responseBody = register(new RegisterRequest("bounds@example.com", "boundsuser", TOO_SHORT_PASSWORD,
+                "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)))
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(responseBody.contains("{max}"));
+        assertTrue(responseBody.contains("128"));
     }
 
     @Test
