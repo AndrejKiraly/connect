@@ -2,6 +2,9 @@ package com.andrejKir.connect.shared.ratelimit;
 
 
 import com.andrejKir.connect.shared.exception.RateLimitExceededException;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Ticker;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
@@ -9,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 
@@ -18,20 +20,27 @@ public class RateLimitService {
 
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
-    private final Map<RateLimitPolicy, Map<String, Bucket>> buckets;
+    private final Map<RateLimitPolicy, Cache<String, Bucket>> buckets;
 
     public RateLimitService() {
-        Map<RateLimitPolicy, Map<String, Bucket>> byPolicy = new EnumMap<>(RateLimitPolicy.class);
+        this(Ticker.systemTicker());
+    }
+
+    RateLimitService(Ticker ticker) {
+        Map<RateLimitPolicy, Cache<String, Bucket>> byPolicy = new EnumMap<>(RateLimitPolicy.class);
 
         for (RateLimitPolicy policy : RateLimitPolicy.values()) {
-            byPolicy.put(policy, new ConcurrentHashMap<>());
+            byPolicy.put(policy, Caffeine.newBuilder()
+                    .expireAfterAccess(policy.window())
+                    .ticker(ticker)
+                    .build());
         }
         this.buckets = Map.copyOf(byPolicy);
     }
 
     public void check(RateLimitPolicy policy, String key) {
         ConsumptionProbe probe = buckets.get(policy)
-                .computeIfAbsent(key, ignored -> newBucket(policy))
+                .get(key, ignored -> newBucket(policy))
                 .tryConsumeAndReturnRemaining(1);
         if (probe.isConsumed()) {
             return;
@@ -41,7 +50,7 @@ public class RateLimitService {
     }
 
     public void clearAll() {
-        buckets.values().forEach(Map::clear);
+        buckets.values().forEach(Cache::invalidateAll);
     }
 
     private Bucket newBucket(RateLimitPolicy policy) {
