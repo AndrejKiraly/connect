@@ -50,13 +50,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity, Clock clock,
                                            MessageSource messageSource, JsonMapper jsonMapper) throws Exception{
+        var securityErrorHandler = new ProblemDetailSecurityErrorHandler(messageSource, jsonMapper);
         httpSecurity
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(
-                        new ProblemDetailAuthenticationEntryPoint(messageSource, jsonMapper)))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(securityErrorHandler)
+                        .accessDeniedHandler(securityErrorHandler))
                 .requestCache(RequestCacheConfigurer::disable)
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(ApiPaths.V1+"/auth/**").permitAll()
