@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,7 +41,7 @@ public class RateLimitInterceptorIntegrationTest extends AbstractIntegrationTest
 
     private ResultActions login(String ip, String usernameOrEmail) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/login")
-                .with(csrf())
+                .with(csrfToken())
                 .with(request -> {
                     request.setRemoteAddr(ip);
                     return request;

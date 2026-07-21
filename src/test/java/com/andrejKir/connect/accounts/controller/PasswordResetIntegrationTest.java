@@ -40,7 +40,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -203,7 +202,7 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions login(String usernameOrEmail, String password) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/login")
-                .with(csrf())
+                .with(csrfToken())
                 .with(request -> { request.setRemoteAddr(TEST_IP); return request; })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"usernameOrEmail\":\"" + usernameOrEmail + "\",\"password\":\"" + password + "\"}"));
@@ -211,7 +210,7 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions perform(String path, Object body) throws Exception {
         return mockMvc.perform(post(path)
-                .with(csrf())
+                .with(csrfToken())
                 .with(request -> { request.setRemoteAddr(TEST_IP); return request; })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(body)));

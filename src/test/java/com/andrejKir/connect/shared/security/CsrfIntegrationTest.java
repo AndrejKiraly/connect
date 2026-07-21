@@ -17,7 +17,7 @@ public class CsrfIntegrationTest extends AbstractIntegrationTest {
     @Test
     void get_setsXsrfTokenCookie() throws Exception {
         mockMvc.perform(get("/actuator/health"))
-                .andExpect(cookie().exists("XSRF-TOKEN"));
+                .andExpect(cookie().exists(CSRF_COOKIE));
     }
 
     @Test
@@ -37,7 +37,7 @@ public class CsrfIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .cookie(xsrf)
-                        .header("X-XSRF-TOKEN", xsrf.getValue())
+                        .header(CSRF_HEADER, xsrf.getValue())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usernameOrEmail\":\"csrf-b\",\"password\":\"x\"}"))
                 .andExpect(status().isUnauthorized());
@@ -45,6 +45,6 @@ public class CsrfIntegrationTest extends AbstractIntegrationTest {
 
     private Cookie fetchXsrfCookie() throws Exception {
         return mockMvc.perform(get("/actuator/health"))
-                .andReturn().getResponse().getCookie("XSRF-TOKEN");
+                .andReturn().getResponse().getCookie(CSRF_COOKIE);
     }
 }

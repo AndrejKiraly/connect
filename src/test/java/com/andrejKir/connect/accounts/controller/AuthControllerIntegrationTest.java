@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -151,7 +150,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions login(String usernameOrEmail, String password) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/login")
-                .with(csrf())
+                .with(csrfToken())
                 .with(request -> { request.setRemoteAddr(testIp()); return request; })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"usernameOrEmail\":\"" + usernameOrEmail + "\",\"password\":\"" + password + "\"}"));
@@ -159,7 +158,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions register(RegisterRequest request) throws Exception {
         return mockMvc.perform(post("/api/v1/auth/register")
-                .with(csrf())
+                .with(csrfToken())
                 .with(request2 -> { request2.setRemoteAddr(testIp()); return request2; })
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
