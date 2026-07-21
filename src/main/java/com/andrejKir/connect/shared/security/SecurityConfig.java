@@ -19,9 +19,12 @@ import org.springframework.security.web.authentication.session.ChangeSessionIdAu
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Map;
 
 @Configuration
@@ -29,6 +32,9 @@ public class SecurityConfig {
 
     @Value("${server.servlet.session.cookie.secure}")
     private boolean cookieSecure;
+
+    @Value("${app.session.absolute-timeout}")
+    private Duration sessionAbsoluteTimeout;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -40,7 +46,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception{
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity, Clock clock) throws Exception{
         httpSecurity
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
@@ -56,7 +62,9 @@ public class SecurityConfig {
                         .logoutUrl(ApiPaths.V1 + "/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) ->
                                 response.setStatus(HttpServletResponse.SC_NO_CONTENT)))
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterBefore(new AbsoluteSessionTimeoutFilter(sessionAbsoluteTimeout, clock),
+                        SecurityContextHolderFilter.class);
         return httpSecurity.build();
     }
 
