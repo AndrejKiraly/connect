@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class AbsoluteSessionTimeoutIntegrationTest extends AbstractIntegrationTest {
@@ -71,7 +73,9 @@ public class AbsoluteSessionTimeoutIntegrationTest extends AbstractIntegrationTe
         when(clock.instant()).thenReturn(loginTime.plus(Duration.ofDays(91)));
 
         mockMvc.perform(get("/api/v1/users/me").cookie(session))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").exists());
     }
 
     private Cookie login() throws Exception {

@@ -4,6 +4,7 @@ package com.andrejKir.connect.shared.security;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,6 +23,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -46,12 +48,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity, Clock clock) throws Exception{
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity, Clock clock,
+                                           MessageSource messageSource, JsonMapper jsonMapper) throws Exception{
         httpSecurity
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(
+                        new ProblemDetailAuthenticationEntryPoint(messageSource, jsonMapper)))
                 .requestCache(RequestCacheConfigurer::disable)
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(ApiPaths.V1+"/auth/**").permitAll()

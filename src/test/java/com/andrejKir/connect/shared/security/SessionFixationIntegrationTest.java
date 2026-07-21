@@ -62,7 +62,7 @@ public class SessionFixationIntegrationTest extends AbstractIntegrationTest {
         assertNull(sessionRepository.findById(plantedSessionId));
 
         mockMvc.perform(get("/api/v1/users/me").cookie(plantedCookie))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
