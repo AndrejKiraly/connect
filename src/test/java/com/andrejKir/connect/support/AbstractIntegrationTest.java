@@ -44,6 +44,13 @@ public abstract class AbstractIntegrationTest {
         rateLimitService.clearAll();
     }
 
+    protected RequestPostProcessor fromIp(String ip) {
+        return request -> {
+            request.setRemoteAddr(ip);
+            return request;
+        };
+    }
+
     protected RequestPostProcessor csrfToken() throws Exception {
         Cookie token = mockMvc.perform(get("/actuator/health"))
                 .andReturn().getResponse().getCookie(CSRF_COOKIE);

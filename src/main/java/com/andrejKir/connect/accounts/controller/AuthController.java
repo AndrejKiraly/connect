@@ -46,7 +46,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AppUserResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<AppUserResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                    HttpServletRequest servletRequest) {
+        rateLimitService.check(RateLimitPolicy.REGISTER_PER_IP, servletRequest.getRemoteAddr());
+
         AppUserResponse response = appUserService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -55,6 +58,7 @@ public class AuthController {
     public ResponseEntity<AppUserResponse> login(@Valid @RequestBody LoginRequest loginRequest,
                                                  HttpServletRequest servletRequest,
                                                  HttpServletResponse servletResponse) {
+        rateLimitService.check(RateLimitPolicy.LOGIN_PER_IP, servletRequest.getRemoteAddr());
         rateLimitService.check(RateLimitPolicy.LOGIN_PER_USER, loginRequest.usernameOrEmail());
 
         var authRequest = UsernamePasswordAuthenticationToken

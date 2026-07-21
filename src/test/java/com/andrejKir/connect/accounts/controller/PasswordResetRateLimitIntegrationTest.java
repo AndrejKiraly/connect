@@ -4,7 +4,6 @@ import com.andrejKir.connect.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -69,10 +68,4 @@ public class PasswordResetRateLimitIntegrationTest extends AbstractIntegrationTe
                 .content("{\"newPassword\":\"" + PASSWORD + "\",\"resetToken\":\"" + resetToken + "\"}"));
     }
 
-    private RequestPostProcessor fromIp(String ip) {
-        return request -> {
-            request.setRemoteAddr(ip);
-            return request;
-        };
-    }
 }
