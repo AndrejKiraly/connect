@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -30,6 +31,7 @@ public class PasswordResetService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetMailer passwordResetMailer;
+    private final Clock clock;
 
     private static final int TOKEN_BYTES = 32;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -37,12 +39,14 @@ public class PasswordResetService {
 
     public PasswordResetService(PasswordResetTokenRepository passwordResetTokenRepository,
                                 AppUserRepository appUserRepository, PasswordEncoder passwordEncoder,
-                                FindByIndexNameSessionRepository<? extends Session> sessionRepository, PasswordResetMailer passwordResetMailer) {
+                                FindByIndexNameSessionRepository<? extends Session> sessionRepository,
+                                PasswordResetMailer passwordResetMailer, Clock clock) {
         this.sessionRepository = sessionRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordResetMailer = passwordResetMailer;
+        this.clock = clock;
     }
 
     public void generatePasswordResetToken(String email) {
@@ -52,14 +56,14 @@ public class PasswordResetService {
         }
         String newToken = generatePlaintextToken();
         PasswordResetToken prt = new PasswordResetToken(
-                appUser.get().getId(), hashToken(newToken), Instant.now().plus(15, ChronoUnit.MINUTES));
+                appUser.get().getId(), hashToken(newToken), clock.instant().plus(15, ChronoUnit.MINUTES));
         passwordResetTokenRepository.save(prt);
         passwordResetMailer.sendResetLink(email, newToken);
     }
 
     @Transactional
     public void resetPassword( String resetToken, String newPassword){
-        Instant resetTime = Instant.now();
+        Instant resetTime = clock.instant();
         PasswordResetToken token = passwordResetTokenRepository.findByTokenHash(hashToken(resetToken))
                 .orElseThrow(InvalidPasswordResetTokenException::new);
         if (token.isUsed() || token.isExpired(resetTime)) {

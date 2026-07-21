@@ -3,7 +3,6 @@ package com.andrejKir.connect.accounts.controller;
 import com.andrejKir.connect.accounts.dto.request.ForgotPasswordRequest;
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.dto.request.ResetPasswordRequest;
-import com.andrejKir.connect.accounts.entity.PasswordResetToken;
 import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
 import com.andrejKir.connect.accounts.repository.PasswordResetTokenRepository;
@@ -16,17 +15,15 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +37,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,8 +61,16 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     PasswordResetService passwordResetService;
 
+    @MockitoBean
+    Clock clock;
+
+    private Instant issuedAt;
+
     @BeforeEach
     void seedKnownUser() {
+        issuedAt = Instant.now();
+        when(clock.instant()).thenReturn(issuedAt);
+
         sessionRepository.findByPrincipalName(USERNAME).keySet().forEach(sessionRepository::deleteById);
         passwordResetTokenRepository.deleteAll();
         appUserRepository.deleteAll();
@@ -99,13 +105,23 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void resetPassword_expiredToken_returns400() throws Exception {
-        String resetToken = "expired-but-otherwise-valid-token";
-        UUID userId = appUserRepository.findByEmail(EMAIL).orElseThrow().getId();
-        passwordResetTokenRepository.save(new PasswordResetToken(
-                userId, sha256Hex(resetToken), Instant.now().minus(1, ChronoUnit.MINUTES)));
+    void resetPassword_sixteenMinuteOldToken_returns400() throws Exception {
+        forgotPassword(EMAIL).andExpect(status().isOk());
+        String resetToken = captureEmailedToken();
+
+        when(clock.instant()).thenReturn(issuedAt.plus(16, ChronoUnit.MINUTES));
 
         resetPassword(resetToken, NEW_PASSWORD).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void resetPassword_fourteenMinuteOldToken_returns204() throws Exception {
+        forgotPassword(EMAIL).andExpect(status().isOk());
+        String resetToken = captureEmailedToken();
+
+        when(clock.instant()).thenReturn(issuedAt.plus(14, ChronoUnit.MINUTES));
+
+        resetPassword(resetToken, NEW_PASSWORD).andExpect(status().isNoContent());
     }
 
     @Test
@@ -179,11 +195,6 @@ public class PasswordResetIntegrationTest extends AbstractIntegrationTest {
             }
         }
         assertEquals(1, succeeded);
-    }
-
-    private static String sha256Hex(String value) throws Exception {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
     }
 
     private String captureEmailedToken() {
