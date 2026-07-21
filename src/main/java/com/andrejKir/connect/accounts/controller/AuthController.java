@@ -19,13 +19,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping(ApiPaths.V1 + "/auth")
@@ -33,12 +32,16 @@ public class AuthController {
 
     private final AppUserService appUserService;
     private final AuthenticationManager authenticationManager;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private final SecurityContextRepository securityContextRepository;
     private final RateLimitService rateLimitService;
 
-    public AuthController(AppUserService appUserService, AuthenticationManager authenticationManager, SecurityContextRepository securityContextRepository, RateLimitService rateLimitService) {
+    public AuthController(AppUserService appUserService, AuthenticationManager authenticationManager,
+                          SessionAuthenticationStrategy sessionAuthenticationStrategy,
+                          SecurityContextRepository securityContextRepository, RateLimitService rateLimitService) {
         this.appUserService = appUserService;
         this.authenticationManager = authenticationManager;
+        this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
         this.rateLimitService = rateLimitService;
     }
@@ -61,6 +64,7 @@ public class AuthController {
         var authRequest = UsernamePasswordAuthenticationToken
                 .unauthenticated(loginRequest.usernameOrEmail(), loginRequest.password());
         Authentication auth = authenticationManager.authenticate(authRequest);
+        sessionAuthenticationStrategy.onAuthentication(auth, servletRequest, servletResponse);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
