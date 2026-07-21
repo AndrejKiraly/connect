@@ -1,12 +1,13 @@
 package com.andrejKir.connect.shared.ratelimit;
 
 
+import com.andrejKir.connect.shared.exception.RateLimitExceededException;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,31 +16,33 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RateLimitService {
 
-    private static final RateLimitPolicy LOGIN_PER_IP = new RateLimitPolicy(20, Duration.ofMinutes(15));
-    private static final RateLimitPolicy LOGIN_PER_USER = new RateLimitPolicy(5, Duration.ofMinutes(15));
-    private static final RateLimitPolicy REGISTER_PER_IP = new RateLimitPolicy(5, Duration.ofHours(1));
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
-    private final Map<String, Bucket> loginIpBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> registerIpBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> loginUserBuckets = new ConcurrentHashMap<>();
+    private final Map<RateLimitPolicy, Map<String, Bucket>> buckets;
 
+    public RateLimitService() {
+        Map<RateLimitPolicy, Map<String, Bucket>> byPolicy = new EnumMap<>(RateLimitPolicy.class);
 
-
-    public ConsumptionProbe tryLoginByIp(String ip) {
-        return loginIpBuckets.computeIfAbsent(ip, key -> newBucket(LOGIN_PER_IP))
-                .tryConsumeAndReturnRemaining(1);
+        for (RateLimitPolicy policy : RateLimitPolicy.values()) {
+            byPolicy.put(policy, new ConcurrentHashMap<>());
+        }
+        this.buckets = Map.copyOf(byPolicy);
     }
 
-    public ConsumptionProbe tryRegisterByIp(String ip){
-        return registerIpBuckets.computeIfAbsent(ip, key -> newBucket(REGISTER_PER_IP))
+    public void check(RateLimitPolicy policy, String key) {
+        ConsumptionProbe probe = buckets.get(policy)
+                .computeIfAbsent(key, ignored -> newBucket(policy))
                 .tryConsumeAndReturnRemaining(1);
+        if (probe.isConsumed()) {
+            return;
+        }
+        throw new RateLimitExceededException(Math.ceilDiv(probe.getNanosToWaitForRefill(),
+                NANOS_PER_SECOND));
     }
 
-    public ConsumptionProbe tryLoginByUser(String usernameOrEmail){
-        return loginUserBuckets.computeIfAbsent(usernameOrEmail, key -> newBucket(LOGIN_PER_USER))
-                .tryConsumeAndReturnRemaining(1);
+    public void clearAll() {
+        buckets.values().forEach(Map::clear);
     }
-
 
     private Bucket newBucket(RateLimitPolicy policy) {
         return Bucket.builder()
@@ -49,7 +52,4 @@ public class RateLimitService {
                         .build())
                 .build();
     }
-
-    private record RateLimitPolicy(long capacity, Duration window) {}
-
 }

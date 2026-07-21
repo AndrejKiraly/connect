@@ -1,7 +1,9 @@
 package com.andrejKir.connect.support;
 
 import com.andrejKir.connect.accounts.service.PasswordResetMailer;
+import com.andrejKir.connect.shared.ratelimit.RateLimitService;
 import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
@@ -33,6 +35,14 @@ public abstract class AbstractIntegrationTest {
 
     @MockitoBean
     protected PasswordResetMailer passwordResetMailer;
+
+    @Autowired
+    private RateLimitService rateLimitService;
+
+    @BeforeEach
+    void clearRateLimitBuckets() {
+        rateLimitService.clearAll();
+    }
 
     protected RequestPostProcessor csrfToken() throws Exception {
         Cookie token = mockMvc.perform(get("/actuator/health"))

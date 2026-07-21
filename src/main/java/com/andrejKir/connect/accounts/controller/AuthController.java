@@ -5,10 +5,9 @@ import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
 import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.accounts.service.AppUserService;
-import com.andrejKir.connect.shared.exception.RateLimitExceededException;
+import com.andrejKir.connect.shared.ratelimit.RateLimitPolicy;
 import com.andrejKir.connect.shared.ratelimit.RateLimitService;
 import com.andrejKir.connect.shared.web.ApiPaths;
-import io.github.bucket4j.ConsumptionProbe;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -56,11 +55,8 @@ public class AuthController {
     public ResponseEntity<AppUserResponse> login(@Valid @RequestBody LoginRequest loginRequest,
                                                  HttpServletRequest servletRequest,
                                                  HttpServletResponse servletResponse) {
-        ConsumptionProbe probe = rateLimitService.tryLoginByUser(loginRequest.usernameOrEmail());
-        if (!probe.isConsumed()){
-            long retryAfterSeconds = Math.ceilDiv(probe.getNanosToWaitForRefill(), 1_000_000_000L);
-            throw new RateLimitExceededException((retryAfterSeconds));
-        }
+        rateLimitService.check(RateLimitPolicy.LOGIN_PER_USER, loginRequest.usernameOrEmail());
+
         var authRequest = UsernamePasswordAuthenticationToken
                 .unauthenticated(loginRequest.usernameOrEmail(), loginRequest.password());
         Authentication auth = authenticationManager.authenticate(authRequest);

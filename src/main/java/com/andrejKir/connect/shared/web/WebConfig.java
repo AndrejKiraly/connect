@@ -17,6 +17,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(rateLimitInterceptor)
-                .addPathPatterns(ApiPaths.V1 + "/auth/login", ApiPaths.V1 + "/auth/register" );
+                .addPathPatterns(ApiPaths.V1 + "/auth/**");
     }
 }
