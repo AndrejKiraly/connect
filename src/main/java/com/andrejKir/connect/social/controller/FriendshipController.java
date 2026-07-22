@@ -1,6 +1,7 @@
 package com.andrejKir.connect.social.controller;
 
 
+import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import com.andrejKir.connect.social.dto.FriendshipRequest;
 import com.andrejKir.connect.social.dto.FriendshipResponse;
@@ -8,6 +9,7 @@ import com.andrejKir.connect.social.service.FriendshipService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -24,13 +26,24 @@ public class FriendshipController {
 
 
     @PostMapping
-    public ResponseEntity<FriendshipResponse> createFriendshipRequest(@Valid @RequestBody FriendshipRequest friendshipRequest){
-        return ResponseEntity.status(HttpStatus.CREATED).body(friendshipService.createFriendshipRequest(friendshipRequest));
+    public ResponseEntity<FriendshipResponse> createFriendshipRequest(
+            @AuthenticationPrincipal SecurityUser principal,
+            @Valid @RequestBody FriendshipRequest friendshipRequest){
+        return ResponseEntity.status(HttpStatus.CREATED).body(friendshipService.createFriendshipRequest(principal.getId(),friendshipRequest));
     }
 
     @PostMapping(path = "{friendshipRequestId}/accept")
-    public ResponseEntity<FriendshipResponse> confirmFriendshipRequest(@PathVariable UUID friendshipRequestId){
-        return ResponseEntity.status(HttpStatus.OK).body(friendshipService.confirmFriendshipRequest(friendshipRequestId));
+    public ResponseEntity<FriendshipResponse> confirmFriendshipRequest(
+            @AuthenticationPrincipal SecurityUser principal,
+            @PathVariable UUID friendshipRequestId){
+        return ResponseEntity.status(HttpStatus.OK).body(friendshipService.confirmFriendshipRequest(principal.getId(),friendshipRequestId));
+    }
+
+    @PostMapping(path = "{friendshipRequestId}/decline")
+    public ResponseEntity<FriendshipResponse> declineFriendshipRequest(
+            @AuthenticationPrincipal SecurityUser principal,
+            @PathVariable UUID friendshipRequestId){
+        return ResponseEntity.status(HttpStatus.OK).body(friendshipService.declineFriendshipRequest(principal.getId(),friendshipRequestId));
     }
 
 

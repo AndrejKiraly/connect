@@ -56,4 +56,8 @@ public class AppUserService {
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + id));
         return AppUserResponse.from(user);
     }
+
+    public boolean exists(UUID id){
+        return appUserRepository.existsById(id);
+    }
 }

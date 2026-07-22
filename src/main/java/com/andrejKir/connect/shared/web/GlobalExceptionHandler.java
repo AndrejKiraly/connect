@@ -8,7 +8,10 @@ import com.andrejKir.connect.shared.exception.RateLimitExceededException;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
+import com.andrejKir.connect.social.exception.FriendshipRequestNotFoundException;
 import com.andrejKir.connect.social.exception.FriendshipRequestOnCooldownException;
+import com.andrejKir.connect.social.exception.FriendshipTargetNotFoundException;
+import com.andrejKir.connect.social.exception.OwnFriendshipRequestException;
 import com.andrejKir.connect.social.exception.SelfFriendshipException;
 import com.andrejKir.connect.shared.exception.LocalizedException;
 import org.springframework.context.MessageSource;
@@ -68,6 +71,19 @@ public class GlobalExceptionHandler {
     })
     public ProblemDetail handleFriendshipConflict(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, resolve(e));
+    }
+
+    @ExceptionHandler({
+            FriendshipTargetNotFoundException.class,
+            FriendshipRequestNotFoundException.class
+    })
+    public ProblemDetail handleFriendshipNotFound(LocalizedException e){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, resolve(e));
+    }
+
+    @ExceptionHandler(OwnFriendshipRequestException.class)
+    public ProblemDetail handleOwnFriendshipRequest(LocalizedException e){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, resolve(e));
     }
 
     @ExceptionHandler(InvalidPasswordResetTokenException.class)

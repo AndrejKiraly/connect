@@ -88,4 +88,12 @@ public class Friendship {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
+
+    public boolean involves(UUID userId){
+        return userLowId.equals(userId) || userHighId.equals(userId);
+    }
+
+    public boolean isRequestedBy(UUID userId){
+        return requestedBy.equals(userId);
+    }
 }

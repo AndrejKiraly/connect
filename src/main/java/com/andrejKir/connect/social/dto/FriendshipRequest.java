@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record FriendshipRequest (
-        @NotNull UUID requesterId, @NotNull UUID targetId
+        @NotNull UUID targetId
 )
 {
 }
