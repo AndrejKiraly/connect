@@ -60,7 +60,10 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.requestedBy").value(userA.id().toString()));
+                .andExpect(jsonPath("$.counterpart.id").value(userB.id().toString()));
+
+        Friendship created = friendshipRepository.findByUsers(UserPair.of(userA.id(), userB.id())).orElseThrow();
+        assertEquals(userA.id(), created.getRequestedBy());
     }
 
     @Test

@@ -96,4 +96,12 @@ public class Friendship {
     public boolean isRequestedBy(UUID userId){
         return requestedBy.equals(userId);
     }
+
+    public UUID counterpartOf(UUID userId){
+        if (userId.equals(userHighId)){
+            return userLowId;
+        } else if (userId.equals(userLowId)) {
+            return userHighId;
+        }else throw new IllegalArgumentException("user id not found in both cases");
+    }
 }

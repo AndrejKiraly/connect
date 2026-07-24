@@ -1,6 +1,7 @@
 package com.andrejKir.connect.social.service;
 
 
+import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.domain.UserPair;
 import com.andrejKir.connect.social.dto.FriendshipRequest;
@@ -53,7 +54,7 @@ public class FriendshipService {
 
         try {
             Friendship saved = friendshipRepository.saveAndFlush(Friendship.request(userPair, actorId));
-            return FriendshipResponse.from(saved);
+            return toResponse(saved, actorId);
         } catch (DataIntegrityViolationException e) {
             throw new FriendshipRequestAlreadyPendingException();
         }
@@ -66,7 +67,7 @@ public class FriendshipService {
             throw new FriendshipNotPendingException();
         }
         friendship.accept();
-        return FriendshipResponse.from(friendship);
+        return toResponse(friendship, actorId);
     }
 
     @Transactional
@@ -76,7 +77,12 @@ public class FriendshipService {
             throw new FriendshipNotPendingException();
         }
         friendship.decline();
-        return FriendshipResponse.from(friendship);
+        return toResponse(friendship, actorId);
+    }
+
+    private FriendshipResponse toResponse(Friendship friendship, UUID actorId) {
+        AppUserPublicSummaryResponse counterpart = appUserService.getSummary(friendship.counterpartOf(actorId));
+        return FriendshipResponse.from(friendship, counterpart);
     }
 
     private Friendship requireAddressee(UUID actorId, UUID friendshipRequestId) {

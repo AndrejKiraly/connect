@@ -3,6 +3,7 @@ package com.andrejKir.connect.accounts.service;
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
 import com.andrejKir.connect.accounts.dto.response.AppUserPrivateDetailResponse;
 import com.andrejKir.connect.accounts.dto.response.AppUserPrivateSummaryResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.entity.AppUser;
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
@@ -62,6 +63,13 @@ public class AppUserService {
         AppUser user = appUserRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + id));
         return AppUserPrivateDetailResponse.from(user);
+    }
+
+    @Transactional(readOnly = true)
+    public AppUserPublicSummaryResponse getSummary(UUID id) {
+        return appUserRepository.findById(id)
+                .map(AppUserPublicSummaryResponse::from)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + id));
     }
 
     public boolean exists(UUID id){
