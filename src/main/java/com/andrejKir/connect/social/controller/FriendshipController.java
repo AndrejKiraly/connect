@@ -5,6 +5,7 @@ import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import com.andrejKir.connect.social.dto.FriendshipRequest;
 import com.andrejKir.connect.social.dto.FriendshipResponse;
+import com.andrejKir.connect.social.enums.RequestDirection;
 import com.andrejKir.connect.social.service.FriendshipService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,6 +46,19 @@ public class FriendshipController {
             @AuthenticationPrincipal SecurityUser principal,
             @PathVariable UUID friendshipRequestId){
         return ResponseEntity.status(HttpStatus.OK).body(friendshipService.declineFriendshipRequest(principal.getId(),friendshipRequestId));
+    }
+
+    @GetMapping("/requests")
+    public ResponseEntity<List<FriendshipResponse>> listRequests(
+            @AuthenticationPrincipal SecurityUser principal,
+            @RequestParam(required = false) String direction){
+        return ResponseEntity.ok(friendshipService.listRequests(principal.getId(), RequestDirection.from(direction)));
+    }
+
+    @GetMapping("/friends")
+    public ResponseEntity<List<FriendshipResponse>> listFriends(
+            @AuthenticationPrincipal SecurityUser principal){
+        return ResponseEntity.ok(friendshipService.listFriends(principal.getId()));
     }
 
 

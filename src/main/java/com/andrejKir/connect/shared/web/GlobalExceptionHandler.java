@@ -6,6 +6,7 @@ import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
 import com.andrejKir.connect.shared.exception.RateLimitExceededException;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
+import com.andrejKir.connect.social.exception.InvalidFriendshipDirectionException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestNotFoundException;
@@ -60,6 +61,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SelfFriendshipException.class)
     public ProblemDetail handleSelfFriendship(LocalizedException e){
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
+    }
+
+    @ExceptionHandler(InvalidFriendshipDirectionException.class)
+    public ProblemDetail handleInvalidFriendshipDirection(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
     }
 

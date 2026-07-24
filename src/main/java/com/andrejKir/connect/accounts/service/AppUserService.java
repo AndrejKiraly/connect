@@ -14,7 +14,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AppUserService {
@@ -70,6 +73,12 @@ public class AppUserService {
         return appUserRepository.findById(id)
                 .map(AppUserPublicSummaryResponse::from)
                 .orElseThrow(() -> new IllegalStateException("User not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<UUID, AppUserPublicSummaryResponse> getSummaries(Set<UUID> ids) {
+        return appUserRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(AppUser::getId, AppUserPublicSummaryResponse::from));
     }
 
     public boolean exists(UUID id){

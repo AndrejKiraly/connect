@@ -2,12 +2,14 @@ package com.andrejKir.connect.social.service;
 
 
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
+import com.andrejKir.connect.accounts.entity.AppUser;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.domain.UserPair;
 import com.andrejKir.connect.social.dto.FriendshipRequest;
 import com.andrejKir.connect.social.dto.FriendshipResponse;
 import com.andrejKir.connect.social.entity.Friendship;
 import com.andrejKir.connect.social.enums.FriendshipStatus;
+import com.andrejKir.connect.social.enums.RequestDirection;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
@@ -21,7 +23,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class FriendshipService {
@@ -78,6 +84,30 @@ public class FriendshipService {
         }
         friendship.decline();
         return toResponse(friendship, actorId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> listFriends(UUID actorId) {
+        return toResponses(friendshipRepository.findAcceptedRequestsByUser(actorId), actorId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FriendshipResponse> listRequests(UUID actorId, RequestDirection direction) {
+        List<Friendship> rows = switch (direction) {
+            case INCOMING -> friendshipRepository.findPendingRequestsRequestedToUser(actorId);
+            case OUTGOING -> friendshipRepository.findPendingRequestsRequestedByUser(actorId);
+        };
+        return toResponses(rows, actorId);
+    }
+
+    private List<FriendshipResponse> toResponses(List<Friendship> rows, UUID actorId) {
+        Set<UUID> counterpartIds = rows.stream()
+                .map(f -> f.counterpartOf(actorId))
+                .collect(Collectors.toSet());
+        Map<UUID, AppUserPublicSummaryResponse> summaries = appUserService.getSummaries(counterpartIds);
+        return rows.stream()
+                .map(f -> FriendshipResponse.from(f, summaries.get(f.counterpartOf(actorId))))
+                .toList();
     }
 
     private FriendshipResponse toResponse(Friendship friendship, UUID actorId) {
