@@ -1,7 +1,7 @@
 package com.andrejKir.connect.social.controller;
 
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
-import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateSummaryResponse;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.domain.UserPair;
@@ -35,9 +35,9 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     FriendshipRepository friendshipRepository;
 
-    private AppUserResponse userA;
-    private AppUserResponse userB;
-    private AppUserResponse userC;
+    private AppUserPrivateSummaryResponse userA;
+    private AppUserPrivateSummaryResponse userB;
+    private AppUserPrivateSummaryResponse userC;
 
     @BeforeEach
     void seed() {
@@ -147,7 +147,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         assertEquals(FriendshipStatus.DECLINED, reloaded.getStatus());
     }
 
-    private AppUserResponse register(String email, String username) {
+    private AppUserPrivateSummaryResponse register(String email, String username) {
         return appUserService.registerUser(new RegisterRequest(
                 email, username, PASSWORD, username, "First", "Last", LocalDate.of(2000, 1, 1)));
     }

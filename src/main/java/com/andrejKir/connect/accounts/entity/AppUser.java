@@ -17,6 +17,8 @@ import java.util.UUID;
 @Entity
 public class AppUser {
 
+    private static final int DISPLAY_NAME_MAX_LENGTH = 100;
+
     @Id
     @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
     private UUID id;
@@ -30,7 +32,7 @@ public class AppUser {
     @Column(nullable = false)
     private String passwordHash;
 
-    @Column(length = 100)
+    @Column(nullable = false, length = DISPLAY_NAME_MAX_LENGTH)
     private String displayName;
 
     @Column(nullable = false,length = 100)
@@ -38,6 +40,8 @@ public class AppUser {
 
     @Column(nullable = false, length = 150)
     private String lastName;
+
+    private String description;
 
 
     @Column(nullable = false)
@@ -58,10 +62,19 @@ public class AppUser {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
-        this.displayName = displayName;
         this.firstName = firstName;
         this.lastName = lastName;
         this.birthDate = birthDate;
+        this.displayName = resolveDisplayName(displayName, firstName, lastName);
+        this.description = "";
+    }
+
+    private static String resolveDisplayName(String displayName, String firstName, String lastName) {
+        if (displayName != null && !displayName.isBlank()) {
+            return displayName;
+        }
+        String fullName = firstName + " " + lastName;
+        return fullName.length() <= DISPLAY_NAME_MAX_LENGTH ? fullName : firstName;
     }
 
     public UUID getId(){
@@ -101,6 +114,8 @@ public class AppUser {
     public Instant getUpdatedAt() {
         return updatedAt;
     }
+
+    public String getDescription(){return description;}
 
     public void changePassword(String passwordHash){
         this.passwordHash = passwordHash;

@@ -1,7 +1,8 @@
 package com.andrejKir.connect.accounts.service;
 
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
-import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateDetailResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateSummaryResponse;
 import com.andrejKir.connect.accounts.entity.AppUser;
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
@@ -26,7 +27,7 @@ public class AppUserService {
     }
 
     @Transactional
-    public AppUserResponse registerUser(RegisterRequest request) {
+    public AppUserPrivateSummaryResponse registerUser(RegisterRequest request) {
         if (appUserRepository.existsByEmail(request.email())) {
             throw new DuplicateEmailException(request.email());
         }
@@ -48,13 +49,19 @@ public class AppUserService {
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateUserException();
         }
-        return  AppUserResponse.from(appUser);
+        return  AppUserPrivateSummaryResponse.from(appUser);
     }
 
-    public AppUserResponse getById(UUID id) {
+    public AppUserPrivateSummaryResponse getPrivateSummary(UUID id) {
         AppUser user = appUserRepository.findById(id)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + id));
-        return AppUserResponse.from(user);
+        return AppUserPrivateSummaryResponse.from(user);
+    }
+
+    public AppUserPrivateDetailResponse getPrivateDetail(UUID id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + id));
+        return AppUserPrivateDetailResponse.from(user);
     }
 
     public boolean exists(UUID id){

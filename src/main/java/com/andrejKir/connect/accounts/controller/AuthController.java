@@ -2,7 +2,7 @@ package com.andrejKir.connect.accounts.controller;
 
 import com.andrejKir.connect.accounts.dto.request.LoginRequest;
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
-import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateSummaryResponse;
 import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.ratelimit.RateLimitPolicy;
@@ -46,16 +46,16 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AppUserResponse> register(@Valid @RequestBody RegisterRequest request,
+    public ResponseEntity<AppUserPrivateSummaryResponse> register(@Valid @RequestBody RegisterRequest request,
                                                     HttpServletRequest servletRequest) {
         rateLimitService.check(RateLimitPolicy.REGISTER_PER_IP, servletRequest.getRemoteAddr());
 
-        AppUserResponse response = appUserService.registerUser(request);
+        AppUserPrivateSummaryResponse response = appUserService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AppUserResponse> login(@Valid @RequestBody LoginRequest loginRequest,
+    public ResponseEntity<AppUserPrivateSummaryResponse> login(@Valid @RequestBody LoginRequest loginRequest,
                                                  HttpServletRequest servletRequest,
                                                  HttpServletResponse servletResponse) {
         rateLimitService.check(RateLimitPolicy.LOGIN_PER_IP, servletRequest.getRemoteAddr());
@@ -73,6 +73,6 @@ public class AuthController {
         securityContextRepository.saveContext(context, servletRequest, servletResponse);
 
         SecurityUser principal = (SecurityUser) auth.getPrincipal();
-        return ResponseEntity.ok(appUserService.getById(principal.getId()));
+        return ResponseEntity.ok(appUserService.getPrivateSummary(principal.getId()));
     }
 }

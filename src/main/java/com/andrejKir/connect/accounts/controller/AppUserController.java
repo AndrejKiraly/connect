@@ -1,6 +1,6 @@
 package com.andrejKir.connect.accounts.controller;
 
-import com.andrejKir.connect.accounts.dto.response.AppUserResponse;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateDetailResponse;
 import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.web.ApiPaths;
@@ -20,7 +20,7 @@ public class AppUserController {
     }
 
     @GetMapping("/me")
-    public AppUserResponse me(@AuthenticationPrincipal SecurityUser principal) {
-        return appUserService.getById(principal.getId());
+    public AppUserPrivateDetailResponse me(@AuthenticationPrincipal SecurityUser principal) {
+        return appUserService.getPrivateDetail(principal.getId());
     }
 }
