@@ -5,6 +5,8 @@ import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.entity.AppUser;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.shared.domain.UserPair;
+import com.andrejKir.connect.shared.ratelimit.RateLimitPolicy;
+import com.andrejKir.connect.shared.ratelimit.RateLimitService;
 import com.andrejKir.connect.social.dto.FriendshipRequest;
 import com.andrejKir.connect.social.dto.FriendshipResponse;
 import com.andrejKir.connect.social.entity.Friendship;
@@ -34,14 +36,18 @@ public class FriendshipService {
 
     private final FriendshipRepository friendshipRepository;
     private final AppUserService appUserService;
+    private final RateLimitService rateLimitService;
 
-    public FriendshipService(FriendshipRepository friendshipRepository, AppUserService appUserService) {
+
+    public FriendshipService(FriendshipRepository friendshipRepository, AppUserService appUserService, RateLimitService rateLimitService) {
         this.friendshipRepository = friendshipRepository;
         this.appUserService = appUserService;
+        this.rateLimitService = rateLimitService;
     }
 
     @Transactional
     public FriendshipResponse createFriendshipRequest(UUID actorId, FriendshipRequest request) {
+        rateLimitService.check(RateLimitPolicy.FRIENDSHIP_REQUEST_PER_USER, actorId.toString());
         if (actorId.equals(request.targetId())) {
             throw new SelfFriendshipException();
         }
