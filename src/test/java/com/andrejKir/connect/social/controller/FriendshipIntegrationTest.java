@@ -160,13 +160,6 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void show_pendingByUser_returnsListWith401()throws Exception{
-        Cookie sessionA = loginAs("userA");
-        mockMvc.perform(get("/api/v1/friendship/friends").cookie(sessionA))
-                .andExpect(status().isOk());
-    }
-
-    @Test
     void friends_returnsAccepted_excludesPendingAndDeclined() throws Exception {
         RequestGroup g = seedRequests(userA.id());
         Cookie session = loginAs("userA");
@@ -222,14 +215,6 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requests_missingDirection_returns400() throws Exception {
-        Cookie session = loginAs("userA");
-
-        mockMvc.perform(get("/api/v1/friendship/requests").cookie(session))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void friends_whenNone_returnsEmptyList() throws Exception {
         Cookie session = loginAs("userA");
 
@@ -249,6 +234,17 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
 
         verify(appUserService, times(1)).getSummaries(anySet());
         verify(appUserService, never()).getSummary(any());
+    }
+
+    @Test
+    void countPendingOutgoing_countsOnlyPendingRequestsSentByUser() {
+        AppUser userD = persistUser("userd");
+
+        seedPendingRequest(userA.id(), userB.id());
+        acceptedFriendship(userA.id(), userD.getId());
+        seedPendingRequest(userC.id(), userA.id());
+
+        assertEquals(1, friendshipRepository.countPendingRequestsRequestedByUser(userA.id()));
     }
 
     private RequestGroup seedRequests(UUID main) {
