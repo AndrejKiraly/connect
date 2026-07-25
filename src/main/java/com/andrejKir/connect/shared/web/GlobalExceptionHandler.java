@@ -9,6 +9,7 @@ import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.InvalidFriendshipDirectionException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
+import com.andrejKir.connect.social.exception.FriendshipRequestLimitExceededException;
 import com.andrejKir.connect.social.exception.FriendshipRequestNotFoundException;
 import com.andrejKir.connect.social.exception.FriendshipRequestOnCooldownException;
 import com.andrejKir.connect.social.exception.FriendshipTargetNotFoundException;
@@ -73,7 +74,8 @@ public class GlobalExceptionHandler {
             FriendshipRequestAlreadyPendingException.class,
             AlreadyFriendsException.class,
             FriendshipRequestOnCooldownException.class,
-            FriendshipNotPendingException.class
+            FriendshipNotPendingException.class,
+            FriendshipRequestLimitExceededException.class
     })
     public ProblemDetail handleFriendshipConflict(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, resolve(e));

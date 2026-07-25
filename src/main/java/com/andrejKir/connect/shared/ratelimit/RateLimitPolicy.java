@@ -9,7 +9,7 @@ public enum RateLimitPolicy {
     PASSWORD_FORGOT_PER_IP(5, Duration.ofHours(1)),
     PASSWORD_FORGOT_PER_EMAIL(3, Duration.ofHours(1)),
     PASSWORD_RESET_PER_IP(10, Duration.ofHours(1)),
-    FRIENDSHIP_REQUEST_PER_USER(100, Duration.ofHours(1));
+    FRIENDSHIP_REQUEST_PER_USER(110, Duration.ofHours(1));
 
     private final long capacity;
     private final Duration window;

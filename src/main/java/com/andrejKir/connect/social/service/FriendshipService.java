@@ -15,6 +15,7 @@ import com.andrejKir.connect.social.enums.RequestDirection;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.FriendshipNotPendingException;
 import com.andrejKir.connect.social.exception.FriendshipRequestAlreadyPendingException;
+import com.andrejKir.connect.social.exception.FriendshipRequestLimitExceededException;
 import com.andrejKir.connect.social.exception.FriendshipRequestNotFoundException;
 import com.andrejKir.connect.social.exception.FriendshipRequestOnCooldownException;
 import com.andrejKir.connect.social.exception.FriendshipTargetNotFoundException;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class FriendshipService {
+
+    private static final int MAX_PENDING_OUTGOING_REQUESTS = 100;
 
     private final FriendshipRepository friendshipRepository;
     private final AppUserService appUserService;
@@ -63,6 +66,10 @@ public class FriendshipService {
                 case DECLINED -> new FriendshipRequestOnCooldownException();
             };
         });
+
+        if (friendshipRepository.countPendingRequestsRequestedByUser(actorId) >= MAX_PENDING_OUTGOING_REQUESTS) {
+            throw new FriendshipRequestLimitExceededException();
+        }
 
         try {
             Friendship saved = friendshipRepository.saveAndFlush(Friendship.request(userPair, actorId));

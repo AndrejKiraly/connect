@@ -28,6 +28,11 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
     List<Friendship> findPendingRequestsRequestedByUser(@Param("userId") UUID userId);
 
     @Query("""
+           select count(f) from Friendship f where f.status = com.andrejKir.connect.social.enums.FriendshipStatus.PENDING and f.requestedBy = :userId
+           """)
+    long countPendingRequestsRequestedByUser(@Param("userId") UUID userId);
+
+    @Query("""
            select f from Friendship f where f.status = com.andrejKir.connect.social.enums.FriendshipStatus.PENDING and f.requestedBy != :userId
            and (f.userLowId = :userId or f.userHighId = :userId)
 """)
