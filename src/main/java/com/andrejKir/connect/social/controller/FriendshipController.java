@@ -51,7 +51,7 @@ public class FriendshipController {
     @GetMapping("/requests")
     public ResponseEntity<List<FriendshipResponse>> listRequests(
             @AuthenticationPrincipal SecurityUser principal,
-            @RequestParam(required = false) String direction){
+            @RequestParam String direction){
         return ResponseEntity.ok(friendshipService.listRequests(principal.getId(), RequestDirection.from(direction)));
     }
 
