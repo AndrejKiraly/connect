@@ -11,8 +11,8 @@ CREATE TABLE conversation
         type <> 'DIRECT'
             OR (user_low_id IS NOT NULL AND user_high_id IS NOT NULL AND user_low_id < user_high_id)
         ),
-    CONSTRAINT chk_conversation_group_pair CHECK (
-        type <> 'GROUP'
+    CONSTRAINT chk_conversation_pair_direct_only CHECK (
+        type = 'DIRECT'
             OR (user_low_id IS NULL AND user_high_id IS NULL)
         )
 );
