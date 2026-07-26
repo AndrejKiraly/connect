@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -24,10 +25,12 @@ public class AppUserService {
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
-    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder, Clock clock) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.clock = clock;
     }
 
     @Transactional
@@ -79,6 +82,13 @@ public class AppUserService {
     public Map<UUID, AppUserPublicSummaryResponse> getSummaries(Set<UUID> ids) {
         return appUserRepository.findAllById(ids).stream()
                 .collect(Collectors.toMap(AppUser::getId, AppUserPublicSummaryResponse::from));
+    }
+
+    @Transactional
+    public void deactivate(UUID id) {
+        AppUser user = appUserRepository.findById(id)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + id));
+        user.deactivate(clock.instant());
     }
 
     public boolean exists(UUID id){

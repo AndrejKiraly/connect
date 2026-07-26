@@ -8,7 +8,12 @@ public record AppUserPublicSummaryResponse(
         UUID id,
         String displayName
 ) {
+    private static final String DELETED_DISPLAY_NAME = "Deleted user";
+
     public static AppUserPublicSummaryResponse from(AppUser user) {
+        if (user.isDeactivated()) {
+            return new AppUserPublicSummaryResponse(user.getId(), DELETED_DISPLAY_NAME);
+        }
         return new AppUserPublicSummaryResponse(user.getId(), user.getDisplayName());
     }
 }

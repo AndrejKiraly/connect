@@ -41,6 +41,7 @@ public class AppUser {
     @Column(nullable = false, length = 150)
     private String lastName;
 
+    @Column(nullable = false, length = 256)
     private String description;
 
 
@@ -54,6 +55,8 @@ public class AppUser {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    private Instant deactivatedAt;
 
     protected AppUser() {
     }
@@ -116,6 +119,20 @@ public class AppUser {
     }
 
     public String getDescription(){return description;}
+
+    public Instant getDeactivatedAt() {
+        return deactivatedAt;
+    }
+
+    public boolean isDeactivated() {
+        return deactivatedAt != null;
+    }
+
+    public void deactivate(Instant at) {
+        if (deactivatedAt == null) {
+            this.deactivatedAt = at;
+        }
+    }
 
     public void changePassword(String passwordHash){
         this.passwordHash = passwordHash;
