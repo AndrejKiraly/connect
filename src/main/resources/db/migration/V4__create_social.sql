@@ -8,7 +8,8 @@ CREATE TABLE friendship (
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_friendship PRIMARY KEY (id),
     CONSTRAINT uq_friendship UNIQUE (user_low_id, user_high_id),
-    CONSTRAINT chk_friendship_order CHECK (user_low_id < user_high_id)
+    CONSTRAINT chk_friendship_order CHECK (user_low_id < user_high_id),
+    CONSTRAINT chk_friendship_status CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED'))
 );
 
 CREATE TABLE block (
