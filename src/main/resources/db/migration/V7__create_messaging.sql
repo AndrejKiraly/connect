@@ -27,6 +27,7 @@ CREATE TABLE message
     conversation_id UUID        NOT NULL REFERENCES conversation (id) ON DELETE CASCADE,
     sender_id       UUID        NOT NULL REFERENCES app_user (id),
     body            TEXT        NOT NULL,
+    edited_at       TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_message PRIMARY KEY (id),
     CONSTRAINT chk_message_body CHECK (char_length(body) <= 4000 AND btrim(body) <> '')
@@ -44,3 +45,15 @@ CREATE TABLE conversation_member
 );
 
 CREATE INDEX idx_conversation_member_user ON conversation_member (app_user_id);
+
+CREATE TABLE message_reaction
+(
+    message_id    UUID        NOT NULL REFERENCES message (id) ON DELETE CASCADE,
+    app_user_id   UUID        NOT NULL REFERENCES app_user (id),
+    reaction_type VARCHAR(16) NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT pk_message_reaction PRIMARY KEY (message_id, app_user_id),
+    CONSTRAINT chk_message_reaction_type CHECK (
+        reaction_type IN ('HAHA', 'CRY', 'ANGRY', 'CONFIRM', 'DENY', 'LOVE')
+        )
+);
