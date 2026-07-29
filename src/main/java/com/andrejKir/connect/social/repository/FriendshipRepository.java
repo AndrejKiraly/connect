@@ -3,6 +3,7 @@ package com.andrejKir.connect.social.repository;
 
 import com.andrejKir.connect.shared.domain.UserPair;
 import com.andrejKir.connect.social.entity.Friendship;
+import com.andrejKir.connect.social.enums.FriendshipStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +21,12 @@ public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
 
     default Optional<Friendship> findByUsers(UserPair pair) {
         return findByUserLowIdAndUserHighId(pair.low(), pair.high());
+    }
+
+    boolean existsByUserLowIdAndUserHighIdAndStatus(UUID userLowId, UUID userHighId, FriendshipStatus status);
+
+    default boolean areFriends(UserPair pair) {
+        return existsByUserLowIdAndUserHighIdAndStatus(pair.low(), pair.high(), FriendshipStatus.ACCEPTED);
     }
 
     @Query("""

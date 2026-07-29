@@ -100,6 +100,11 @@ public class FriendshipService {
     }
 
     @Transactional(readOnly = true)
+    public boolean areFriends(UUID userId, UUID otherUserId) {
+        return friendshipRepository.areFriends(UserPair.of(userId, otherUserId));
+    }
+
+    @Transactional(readOnly = true)
     public List<FriendshipResponse> listFriends(UUID actorId) {
         return toResponses(friendshipRepository.findAcceptedRequestsByUser(actorId), actorId);
     }
