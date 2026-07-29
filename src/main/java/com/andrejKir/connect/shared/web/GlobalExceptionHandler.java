@@ -4,6 +4,8 @@ import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.exception.InvalidPasswordResetTokenException;
+import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
+import com.andrejKir.connect.messaging.exception.NotFriendsException;
 import com.andrejKir.connect.shared.exception.RateLimitExceededException;
 import com.andrejKir.connect.social.exception.AlreadyFriendsException;
 import com.andrejKir.connect.social.exception.InvalidFriendshipDirectionException;
@@ -86,14 +88,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             FriendshipTargetNotFoundException.class,
-            FriendshipRequestNotFoundException.class
+            FriendshipRequestNotFoundException.class,
+            ConversationNotFoundException.class
     })
-    public ProblemDetail handleFriendshipNotFound(LocalizedException e){
+    public ProblemDetail handleNotFound(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, resolve(e));
     }
 
-    @ExceptionHandler(OwnFriendshipRequestException.class)
-    public ProblemDetail handleOwnFriendshipRequest(LocalizedException e){
+    @ExceptionHandler({
+            OwnFriendshipRequestException.class,
+            NotFriendsException.class
+    })
+    public ProblemDetail handleForbidden(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, resolve(e));
     }
 
