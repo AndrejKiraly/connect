@@ -26,10 +26,12 @@ CREATE TABLE message
     id              UUID        NOT NULL,
     conversation_id UUID        NOT NULL REFERENCES conversation (id) ON DELETE CASCADE,
     sender_id       UUID        NOT NULL REFERENCES app_user (id),
+    type            VARCHAR(16) NOT NULL DEFAULT 'TEXT',
     body            TEXT        NOT NULL,
     edited_at       TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT pk_message PRIMARY KEY (id),
+    CONSTRAINT chk_message_type CHECK (type IN ('TEXT')),
     CONSTRAINT chk_message_body CHECK (char_length(body) <= 4000 AND btrim(body) <> '')
 );
 
