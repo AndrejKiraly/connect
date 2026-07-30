@@ -4,13 +4,22 @@ import com.andrejKir.connect.messaging.entity.Conversation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-@Repository
 public interface ConversationRepository extends JpaRepository<Conversation, UUID> {
+
+    @Query("""
+           select c from Conversation c
+            where c.id = :conversationId
+              and exists (select 1 from ConversationMember m
+                           where m.id.conversationId = c.id
+                             and m.id.appUserId = :actorId)
+           """)
+    Optional<Conversation> findForMember(@Param("conversationId") UUID conversationId,
+                                         @Param("actorId") UUID actorId);
 
     @Query(value = """
            SELECT c.id                         AS "id",

@@ -51,7 +51,7 @@ class MessageServiceTest {
 
     @Test
     void createMessage_notAMember_isRejected() {
-        when(conversationMemberRepository.existsById(any())).thenReturn(false);
+        when(conversationRepository.findForMember(conversationId, senderId)).thenReturn(Optional.empty());
 
         assertThrows(ConversationNotFoundException.class, this::sendMessage);
 
@@ -60,8 +60,8 @@ class MessageServiceTest {
 
     @Test
     void createMessage_directConversationWithoutFriendship_isRejected() {
-        when(conversationMemberRepository.existsById(any())).thenReturn(true);
-        when(conversationRepository.findById(conversationId)).thenReturn(Optional.of(directConversation()));
+        when(conversationRepository.findForMember(conversationId, senderId))
+                .thenReturn(Optional.of(directConversation()));
         when(friendshipService.areFriends(senderId, counterpartId)).thenReturn(false);
 
         assertThrows(NotFriendsException.class, this::sendMessage);
@@ -71,14 +71,14 @@ class MessageServiceTest {
 
     @Test
     void createMessage_consumesBurstLimitBeforeSustainedAndBeforeAuthorization() {
-        when(conversationMemberRepository.existsById(any())).thenReturn(false);
+        when(conversationRepository.findForMember(conversationId, senderId)).thenReturn(Optional.empty());
 
         assertThrows(ConversationNotFoundException.class, this::sendMessage);
 
-        InOrder order = inOrder(rateLimitService, conversationMemberRepository);
+        InOrder order = inOrder(rateLimitService, conversationRepository);
         order.verify(rateLimitService).check(RateLimitPolicy.MESSAGE_SEND_BURST_PER_USER, senderId.toString());
         order.verify(rateLimitService).check(RateLimitPolicy.MESSAGE_SEND_PER_USER, senderId.toString());
-        order.verify(conversationMemberRepository).existsById(any());
+        order.verify(conversationRepository).findForMember(conversationId, senderId);
     }
 
     private void sendMessage() {

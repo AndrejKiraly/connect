@@ -3,7 +3,6 @@ package com.andrejKir.connect.messaging.service;
 import com.andrejKir.connect.messaging.dto.request.MessageRequest;
 import com.andrejKir.connect.messaging.dto.response.MessageResponse;
 import com.andrejKir.connect.messaging.entity.Conversation;
-import com.andrejKir.connect.messaging.entity.ConversationMemberId;
 import com.andrejKir.connect.messaging.entity.Message;
 import com.andrejKir.connect.messaging.enums.ConversationType;
 import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
@@ -49,15 +48,12 @@ public class MessageService {
         requireMessageAllowed(conversation, senderId);
 
         Message message = messageRepository.save(Message.text(conversationId, senderId, request.body()));
-        conversationMemberRepository.markRead(conversationId,senderId,message.getId());
+        conversationMemberRepository.markRead(conversationId, senderId, message.getId());
         return MessageResponse.from(message);
     }
 
     private Conversation requireMembership(UUID conversationId, UUID actorId) {
-        if (!conversationMemberRepository.existsById(new ConversationMemberId(actorId, conversationId))) {
-            throw new ConversationNotFoundException(conversationId);
-        }
-        return conversationRepository.findById(conversationId)
+        return conversationRepository.findForMember(conversationId, actorId)
                 .orElseThrow(() -> new ConversationNotFoundException(conversationId));
     }
 
