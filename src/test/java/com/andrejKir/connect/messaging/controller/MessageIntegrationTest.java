@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -63,9 +65,8 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void seed() {
-        String suffix = UUID.randomUUID().toString().substring(0, 8);
-        ana = register("ana" + suffix);
-        bob = register("bob" + suffix);
+        ana = register("ana");
+        bob = register("bob");
 
         befriend(ana.id(), bob.id());
         conversationId = openDirectConversation(ana.id(), bob.id());
@@ -89,8 +90,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void sendMessage_intoConversationOfOthers_returns404() throws Exception {
-        AppUserPrivateSummaryResponse stranger = register("stranger" + UUID.randomUUID().toString().substring(0, 8));
-        Cookie session = loginAs(stranger.username());
+        Cookie session = loginAs(register("stranger").username());
 
         sendMessage(session, conversationId, "kde som")
                 .andExpect(status().isNotFound());
@@ -111,7 +111,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void markRead_ignoresMessageFromAnotherConversation() {
-        UUID otherConversationId = openDirectConversation(bob.id(), register("cyril" + UUID.randomUUID().toString().substring(0, 8)).id());
+        UUID otherConversationId = openDirectConversation(bob.id(), register("cyril").id());
         UUID foreignMessageId = persistMessage(otherConversationId, bob.id());
 
         markRead(conversationId, ana.id(), foreignMessageId);
@@ -119,12 +119,80 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         assertNull(watermarkOf(conversationId, ana.id()));
     }
 
+    @Test
+    void inbox_listsOnlyMyConversations_withCounterpartAndLastMessage() throws Exception {
+        persistMessage(conversationId, bob.id(), "prva");
+        UUID last = persistMessage(conversationId, bob.id(), "posledna");
+
+        AppUserPrivateSummaryResponse cyril = register("cyril");
+        UUID foreign = openDirectConversation(bob.id(), cyril.id());
+        persistMessage(foreign, cyril.id(), "cudzia");
+
+        mockMvc.perform(get("/api/v1/conversations").cookie(loginAs(ana.username())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(conversationId.toString()))
+                .andExpect(jsonPath("$[0].counterpart.id").value(bob.id().toString()))
+                .andExpect(jsonPath("$[0].lastMessage.id").value(last.toString()))
+                .andExpect(jsonPath("$[0].lastMessage.preview").value("posledna"))
+                .andExpect(jsonPath("$[0].lastMessage.sentByMe").value(false));
+    }
+
+    @Test
+    void inbox_ordersConversationsByMostRecentMessage() throws Exception {
+        UUID withCyril = openDirectConversation(ana.id(), register("cyril").id());
+
+        persistMessage(withCyril, ana.id(), "starsia");
+        persistMessage(conversationId, bob.id(), "novsia");
+
+        mockMvc.perform(get("/api/v1/conversations").cookie(loginAs(ana.username())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(conversationId.toString()))
+                .andExpect(jsonPath("$[1].id").value(withCyril.toString()));
+    }
+
+    @Test
+    void inbox_unreadFollowsReadWatermark() throws Exception {
+        Cookie session = loginAs(ana.username());
+        UUID older = persistMessage(conversationId, bob.id(), "stara");
+        UUID newer = persistMessage(conversationId, bob.id(), "nova");
+
+        expectUnread(session, true);
+
+        markRead(conversationId, ana.id(), older);
+        expectUnread(session, true);
+
+        markRead(conversationId, ana.id(), newer);
+        expectUnread(session, false);
+    }
+
+    @Test
+    void inbox_truncatesPreviewOverLimit() throws Exception {
+        Cookie session = loginAs(ana.username());
+
+        persistMessage(conversationId, bob.id(), "x".repeat(140));
+        mockMvc.perform(get("/api/v1/conversations").cookie(session))
+                .andExpect(jsonPath("$[0].lastMessage.preview").value("x".repeat(140)))
+                .andExpect(jsonPath("$[0].lastMessage.truncated").value(false));
+
+        persistMessage(conversationId, bob.id(), "y".repeat(141));
+        mockMvc.perform(get("/api/v1/conversations").cookie(session))
+                .andExpect(jsonPath("$[0].lastMessage.preview").value("y".repeat(140)))
+                .andExpect(jsonPath("$[0].lastMessage.truncated").value(true));
+    }
+
+    private void expectUnread(Cookie session, boolean unread) throws Exception {
+        mockMvc.perform(get("/api/v1/conversations").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].unread").value(unread));
+    }
+
     private void markRead(UUID conversationId, UUID appUserId, UUID messageId) {
         transactionTemplate.executeWithoutResult(
                 status -> conversationMemberRepository.markRead(conversationId, appUserId, messageId));
     }
 
-    private org.springframework.test.web.servlet.ResultActions sendMessage(Cookie session, UUID conversationId, String body)
+    private ResultActions sendMessage(Cookie session, UUID conversationId, String body)
             throws Exception {
         return mockMvc.perform(post("/api/v1/conversations/" + conversationId + "/messages")
                 .with(csrfToken())
@@ -140,7 +208,11 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     }
 
     private UUID persistMessage(UUID conversationId, UUID senderId) {
-        return messageRepository.save(Message.text(conversationId, senderId, "x")).getId();
+        return persistMessage(conversationId, senderId, "x");
+    }
+
+    private UUID persistMessage(UUID conversationId, UUID senderId, String body) {
+        return messageRepository.save(Message.text(conversationId, senderId, body)).getId();
     }
 
     private UUID openDirectConversation(UUID a, UUID b) {
@@ -157,7 +229,8 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         friendshipRepository.save(friendship);
     }
 
-    private AppUserPrivateSummaryResponse register(String username) {
+    private AppUserPrivateSummaryResponse register(String prefix) {
+        String username = prefix + UUID.randomUUID().toString().substring(0, 8);
         return appUserService.registerUser(new RegisterRequest(
                 username + "@example.com", username, PASSWORD, username,
                 "First", "Last", LocalDate.of(2000, 1, 1)));
