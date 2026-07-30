@@ -1,13 +1,15 @@
 package com.andrejKir.connect.messaging.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-public class ConversationMember{
+public class ConversationMember {
 
     @EmbeddedId
     private ConversationMemberId id;
