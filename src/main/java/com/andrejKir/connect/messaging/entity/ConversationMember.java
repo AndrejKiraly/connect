@@ -22,7 +22,7 @@ public class ConversationMember{
     }
 
     public ConversationMember(UUID conversationId, UUID appUserId) {
-        this.id = new ConversationMemberId(appUserId, conversationId);
+        this.id = new ConversationMemberId(conversationId, appUserId);
     }
 
     public ConversationMemberId getId() {

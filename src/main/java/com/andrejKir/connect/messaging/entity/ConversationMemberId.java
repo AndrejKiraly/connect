@@ -10,35 +10,35 @@ import java.util.UUID;
 @Embeddable
 public class ConversationMemberId implements Serializable {
     @Column(nullable = false)
-    private UUID appUserId;
-    @Column(nullable = false)
     private UUID conversationId;
+    @Column(nullable = false)
+    private UUID appUserId;
 
-    public ConversationMemberId(UUID appUserId, UUID conversationId){
+    public ConversationMemberId(UUID conversationId, UUID appUserId){
         this.conversationId = conversationId;
         this.appUserId = appUserId;
     }
 
     protected ConversationMemberId(){}
 
-    public UUID getAppUserId() {
-        return appUserId;
-    }
-
     public UUID getConversationId() {
         return conversationId;
     }
 
+    public UUID getAppUserId() {
+        return appUserId;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(appUserId, conversationId);
+        return Objects.hash(conversationId, appUserId);
     }
 
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof ConversationMemberId that)) return false;
-        return Objects.equals(appUserId, that.appUserId)
-                && Objects.equals(conversationId, that.conversationId);
+        return Objects.equals(conversationId, that.conversationId)
+                && Objects.equals(appUserId, that.appUserId);
     }
 }

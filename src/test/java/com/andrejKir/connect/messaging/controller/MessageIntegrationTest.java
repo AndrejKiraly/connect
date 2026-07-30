@@ -137,7 +137,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     }
 
     private UUID watermarkOf(UUID conversationId, UUID appUserId) {
-        return conversationMemberRepository.findById(new ConversationMemberId(appUserId, conversationId))
+        return conversationMemberRepository.findById(new ConversationMemberId(conversationId, appUserId))
                 .orElseThrow()
                 .getLastReadMessageId();
     }
