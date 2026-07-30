@@ -10,7 +10,6 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -19,13 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class AppUserDeactivationIntegrationTest extends AbstractIntegrationTest {
-
-    private static final String PASSWORD = "trombone-sunset-91";
-    private static final String TEST_IP = "10.7.7.7";
 
     @Autowired
     AppUserRepository appUserRepository;
@@ -70,19 +65,5 @@ public class AppUserDeactivationIntegrationTest extends AbstractIntegrationTest 
     void deleteMe_unauthenticated_returns401() throws Exception {
         mockMvc.perform(delete("/api/v1/users/me").with(csrfToken()))
                 .andExpect(status().isUnauthorized());
-    }
-
-    private Cookie loginAs(String username) throws Exception {
-        Cookie session = mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrfToken())
-                        .with(fromIp(TEST_IP))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"usernameOrEmail\":\"" + username + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getCookie("SESSION");
-        if (session == null) {
-            throw new IllegalStateException("No SESSION cookie after login");
-        }
-        return session;
     }
 }

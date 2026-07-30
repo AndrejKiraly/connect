@@ -34,9 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class MessageIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "trombone-sunset-91";
-    private static final String TEST_IP = "10.8.8.8";
-
     @Autowired
     AppUserService appUserService;
     @Autowired
@@ -76,7 +73,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void sendMessage_persistsMessageAndAdvancesSenderWatermark() throws Exception {
-        Cookie session = loginAs(ana);
+        Cookie session = loginAs(ana.username());
 
         String body = sendMessage(session, conversationId, "ahoj")
                 .andExpect(status().isCreated())
@@ -93,7 +90,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     @Test
     void sendMessage_intoConversationOfOthers_returns404() throws Exception {
         AppUserPrivateSummaryResponse stranger = register("stranger" + UUID.randomUUID().toString().substring(0, 8));
-        Cookie session = loginAs(stranger);
+        Cookie session = loginAs(stranger.username());
 
         sendMessage(session, conversationId, "kde som")
                 .andExpect(status().isNotFound());
@@ -164,19 +161,5 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         return appUserService.registerUser(new RegisterRequest(
                 username + "@example.com", username, PASSWORD, username,
                 "First", "Last", LocalDate.of(2000, 1, 1)));
-    }
-
-    private Cookie loginAs(AppUserPrivateSummaryResponse user) throws Exception {
-        Cookie session = mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrfToken())
-                        .with(fromIp(TEST_IP))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"usernameOrEmail\":\"" + user.username() + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getCookie("SESSION");
-        if (session == null) {
-            throw new IllegalStateException("No SESSION cookie after login");
-        }
-        return session;
     }
 }

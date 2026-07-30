@@ -34,9 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class FriendshipIntegrationTest extends AbstractIntegrationTest {
 
-    private static final String PASSWORD = "trombone-sunset-91";
-    private static final String TEST_IP = "10.5.5.5";
-
     @MockitoSpyBean
     AppUserService appUserService;
     @Autowired
@@ -298,17 +295,4 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         friendshipRepository.save(friendship);
     }
 
-    private Cookie loginAs(String username) throws Exception {
-        Cookie session = mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrfToken())
-                        .with(fromIp(TEST_IP))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"usernameOrEmail\":\"" + username + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getCookie("SESSION");
-        if (session == null) {
-            throw new IllegalStateException("No SESSION cookie after login");
-        }
-        return session;
-    }
 }
