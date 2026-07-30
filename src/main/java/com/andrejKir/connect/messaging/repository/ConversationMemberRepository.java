@@ -14,7 +14,7 @@ public interface ConversationMemberRepository extends JpaRepository<Conversation
 
     List<ConversationMember> findByIdAppUserId(UUID appUserId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query(value = """
            UPDATE conversation_member cm
               SET last_read_message_id = :messageId
