@@ -8,8 +8,11 @@ import com.andrejKir.connect.messaging.entity.Conversation;
 import com.andrejKir.connect.messaging.entity.ConversationMember;
 import com.andrejKir.connect.messaging.entity.ConversationMemberId;
 import com.andrejKir.connect.messaging.entity.Message;
+import com.andrejKir.connect.messaging.entity.MessageReaction;
+import com.andrejKir.connect.messaging.enums.MessageReactionType;
 import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
 import com.andrejKir.connect.messaging.repository.ConversationRepository;
+import com.andrejKir.connect.messaging.repository.MessageReactionRepository;
 import com.andrejKir.connect.messaging.repository.MessageRepository;
 import com.andrejKir.connect.shared.domain.UserPair;
 import com.andrejKir.connect.social.entity.Friendship;
@@ -25,6 +28,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,6 +53,8 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     ConversationMemberRepository conversationMemberRepository;
     @Autowired
     MessageRepository messageRepository;
+    @Autowired
+    MessageReactionRepository messageReactionRepository;
 
     private AppUserPrivateSummaryResponse ana;
     private AppUserPrivateSummaryResponse bob;
@@ -58,6 +65,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void clearMessaging() {
+        messageReactionRepository.deleteAll();
         messageRepository.deleteAll();
         conversationMemberRepository.deleteAll();
         conversationRepository.deleteAll();
@@ -181,6 +189,67 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].lastMessage.truncated").value(true));
     }
 
+    @Test
+    void listMessages_returnsNewestFirstAndPagesByCursor() throws Exception {
+        List<UUID> ids = persistMessages(conversationId, ana.id(), 51);
+        Cookie session = loginAs(ana.username());
+
+        String firstPage = getMessages(session, conversationId, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(50))
+                .andExpect(jsonPath("$.hasMore").value(true))
+                .andExpect(jsonPath("$.messages[0].id").value(ids.getLast().toString()))
+                .andReturn().getResponse().getContentAsString();
+
+        UUID cursor = UUID.fromString(objectMapper.readTree(firstPage).get("nextCursor").asText());
+
+        getMessages(session, conversationId, cursor)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].id").value(ids.getFirst().toString()))
+                .andExpect(jsonPath("$.hasMore").value(false))
+                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+    }
+
+    @Test
+    void listMessages_conversationOfOthers_returns404() throws Exception {
+        persistMessage(conversationId, ana.id());
+
+        getMessages(loginAs(register("stranger").username()), conversationId, null)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void listMessages_groupsReactionsAndResolvesReactorNames() throws Exception {
+        UUID older = persistMessage(conversationId, ana.id(), "prva");
+        UUID newer = persistMessage(conversationId, ana.id(), "druha");
+
+        react(older, ana.id(), MessageReactionType.LOVE);
+        react(older, bob.id(), MessageReactionType.HAHA);
+        react(newer, ana.id(), MessageReactionType.LOVE);
+        react(newer, bob.id(), MessageReactionType.LOVE);
+
+        getMessages(loginAs(ana.username()), conversationId, null)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.messages[0].reactions.length()").value(1))
+                .andExpect(jsonPath("$.messages[0].reactions[0].reactionType").value("LOVE"))
+                .andExpect(jsonPath("$.messages[0].reactions[0].userIds.length()").value(2))
+                .andExpect(jsonPath("$.messages[1].reactions.length()").value(2))
+                .andExpect(jsonPath("$.messages[1].reactions[0].reactionType").value("HAHA"))
+                .andExpect(jsonPath("$.messages[1].reactions[1].reactionType").value("LOVE"))
+                .andExpect(jsonPath("$.users['" + bob.id() + "'].displayName").value(bob.username()));
+    }
+
+    private void react(UUID messageId, UUID appUserId, MessageReactionType reactionType) {
+        messageReactionRepository.save(MessageReaction.of(messageId, appUserId, reactionType));
+    }
+
+    private ResultActions getMessages(Cookie session, UUID conversationId, UUID beforeId) throws Exception {
+        String url = "/api/v1/conversations/" + conversationId + "/messages"
+                + (beforeId == null ? "" : "?beforeId=" + beforeId);
+        return mockMvc.perform(get(url).cookie(session));
+    }
+
     private void expectUnread(Cookie session, boolean unread) throws Exception {
         mockMvc.perform(get("/api/v1/conversations").cookie(session))
                 .andExpect(status().isOk())
@@ -209,6 +278,14 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     private UUID persistMessage(UUID conversationId, UUID senderId) {
         return persistMessage(conversationId, senderId, "x");
+    }
+
+    private List<UUID> persistMessages(UUID conversationId, UUID senderId, int count) {
+        List<UUID> ids = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            ids.add(persistMessage(conversationId, senderId, "sprava " + i));
+        }
+        return ids;
     }
 
     private UUID persistMessage(UUID conversationId, UUID senderId, String body) {

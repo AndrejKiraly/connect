@@ -2,7 +2,11 @@ package com.andrejKir.connect.messaging.service;
 
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.service.AppUserService;
+import com.andrejKir.connect.messaging.dto.response.ConversationDetailResponse;
 import com.andrejKir.connect.messaging.dto.response.ConversationSummaryResponse;
+import com.andrejKir.connect.messaging.entity.Conversation;
+import com.andrejKir.connect.messaging.enums.ConversationType;
+import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
 import com.andrejKir.connect.messaging.repository.ConversationInboxRow;
 import com.andrejKir.connect.messaging.repository.ConversationRepository;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,18 @@ public class ConversationService {
         return rows.stream()
                 .map(row -> ConversationSummaryResponse.from(row, users, actorId))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ConversationDetailResponse getConversation(UUID conversationId, UUID actorId) {
+        Conversation conversation = conversationRepository.findForMember(conversationId, actorId)
+                .orElseThrow(() -> new ConversationNotFoundException(conversationId));
+
+        AppUserPublicSummaryResponse counterpart = conversation.getType() == ConversationType.DIRECT
+                ? appUserService.getSummary(conversation.counterpartOf(actorId))
+                : null;
+
+        return ConversationDetailResponse.from(conversation, counterpart);
     }
 
     private Set<UUID> referencedUserIds(List<ConversationInboxRow> rows) {
