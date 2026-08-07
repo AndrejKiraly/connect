@@ -11,10 +11,8 @@ import com.andrejKir.connect.messaging.entity.Message;
 import com.andrejKir.connect.messaging.entity.MessageReaction;
 import com.andrejKir.connect.messaging.enums.ConversationType;
 import com.andrejKir.connect.messaging.enums.MessageReactionType;
-import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
 import com.andrejKir.connect.messaging.exception.NotFriendsException;
 import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
-import com.andrejKir.connect.messaging.repository.ConversationRepository;
 import com.andrejKir.connect.messaging.repository.MessageReactionRepository;
 import com.andrejKir.connect.messaging.repository.MessageRepository;
 import com.andrejKir.connect.shared.ratelimit.RateLimitPolicy;
@@ -32,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class MessageService {
@@ -40,23 +39,23 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final MessageReactionRepository messageReactionRepository;
-    private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository conversationMemberRepository;
+    private final ConversationService conversationService;
     private final AppUserService appUserService;
     private final FriendshipService friendshipService;
     private final RateLimitService rateLimitService;
 
     public MessageService(MessageRepository messageRepository,
                           MessageReactionRepository messageReactionRepository,
-                          ConversationRepository conversationRepository,
                           ConversationMemberRepository conversationMemberRepository,
+                          ConversationService conversationService,
                           AppUserService appUserService,
                           FriendshipService friendshipService,
                           RateLimitService rateLimitService) {
         this.messageRepository = messageRepository;
         this.messageReactionRepository = messageReactionRepository;
-        this.conversationRepository = conversationRepository;
         this.conversationMemberRepository = conversationMemberRepository;
+        this.conversationService = conversationService;
         this.appUserService = appUserService;
         this.friendshipService = friendshipService;
         this.rateLimitService = rateLimitService;
@@ -67,7 +66,7 @@ public class MessageService {
         rateLimitService.check(RateLimitPolicy.MESSAGE_SEND_BURST_PER_USER, senderId.toString());
         rateLimitService.check(RateLimitPolicy.MESSAGE_SEND_PER_USER, senderId.toString());
 
-        Conversation conversation = requireMembership(conversationId, senderId);
+        Conversation conversation = conversationService.requireMember(conversationId, senderId);
         requireMessageAllowed(conversation, senderId);
 
         Message message = messageRepository.save(Message.text(conversationId, senderId, request.body()));
@@ -76,65 +75,64 @@ public class MessageService {
     }
 
     @Transactional(readOnly = true)
-    public MessagePageResponse listMessages(UUID conversationId, UUID actorId, UUID before) {
-        requireMembership(conversationId, actorId);
+    public MessagePageResponse listMessages(UUID conversationId, UUID actorId, UUID cursor) {
+        conversationService.requireMember(conversationId, actorId);
 
         Limit limit = Limit.of(MESSAGE_PAGE_SIZE + 1);
-        List<Message> page = before == null
+        List<Message> page = cursor == null
                 ? messageRepository.findByConversationIdOrderByIdDesc(conversationId, limit)
-                : messageRepository.findByConversationIdAndIdLessThanOrderByIdDesc(conversationId, before, limit);
+                : messageRepository.findByConversationIdAndIdLessThanOrderByIdDesc(conversationId, cursor, limit);
 
         boolean hasMore = page.size() > MESSAGE_PAGE_SIZE;
         if (hasMore) {
             page = page.subList(0, MESSAGE_PAGE_SIZE);
         }
 
-        Map<UUID, List<MessageReactionResponse>> reactions = reactionsByMessage(page);
+        List<MessageReaction> reactions = findReactions(page);
+        Map<UUID, List<MessageReactionResponse>> reactionsByMessage = groupByMessage(reactions);
         Map<UUID, AppUserPublicSummaryResponse> users = appUserService.getSummaries(referencedUserIds(page, reactions));
 
         List<MessageResponse> messages = page.stream()
-                .map(message -> MessageResponse.from(message, reactions.getOrDefault(message.getId(), List.of())))
+                .map(message -> MessageResponse.from(message, reactionsByMessage.getOrDefault(message.getId(), List.of())))
                 .toList();
 
-        return new MessagePageResponse(messages, users, hasMore ? messages.getLast().id() : null, hasMore);
+        return MessagePageResponse.of(messages, users, hasMore);
     }
 
-    private Map<UUID, List<MessageReactionResponse>> reactionsByMessage(List<Message> page) {
+    private List<MessageReaction> findReactions(List<Message> page) {
         if (page.isEmpty()) {
-            return Map.of();
+            return List.of();
         }
-        List<UUID> messageIds = page.stream().map(Message::getId).toList();
+        return messageReactionRepository.findByIdMessageIdInOrderByCreatedAtAscIdAppUserIdAsc(
+                page.stream().map(Message::getId).toList());
+    }
 
+    private Map<UUID, List<MessageReactionResponse>> groupByMessage(List<MessageReaction> reactions) {
         Map<UUID, Map<MessageReactionType, List<UUID>>> grouped = new HashMap<>();
-        for (MessageReaction reaction : messageReactionRepository.findByIdMessageIdInOrderByCreatedAtAsc(messageIds)) {
+        for (MessageReaction reaction : reactions) {
             grouped.computeIfAbsent(reaction.getId().getMessageId(), key -> new EnumMap<>(MessageReactionType.class))
                     .computeIfAbsent(reaction.getReactionType(), key -> new ArrayList<>())
                     .add(reaction.getId().getAppUserId());
         }
-
-        Map<UUID, List<MessageReactionResponse>> byMessage = new HashMap<>();
-        grouped.forEach((messageId, byType) -> byMessage.put(messageId, byType.entrySet().stream()
-                .map(entry -> new MessageReactionResponse(entry.getKey(), entry.getValue()))
-                .toList()));
-        return byMessage;
+        return grouped.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> toResponses(entry.getValue())));
     }
 
-    private Set<UUID> referencedUserIds(List<Message> page, Map<UUID, List<MessageReactionResponse>> reactions) {
+    private List<MessageReactionResponse> toResponses(Map<MessageReactionType, List<UUID>> byType) {
+        return byType.entrySet().stream()
+                .map(entry -> new MessageReactionResponse(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private Set<UUID> referencedUserIds(List<Message> page, List<MessageReaction> reactions) {
         Set<UUID> userIds = new HashSet<>();
         for (Message message : page) {
             userIds.add(message.getSenderId());
         }
-        for (List<MessageReactionResponse> messageReactions : reactions.values()) {
-            for (MessageReactionResponse reaction : messageReactions) {
-                userIds.addAll(reaction.userIds());
-            }
+        for (MessageReaction reaction : reactions) {
+            userIds.add(reaction.getId().getAppUserId());
         }
         return userIds;
-    }
-
-    private Conversation requireMembership(UUID conversationId, UUID actorId) {
-        return conversationRepository.findForMember(conversationId, actorId)
-                .orElseThrow(() -> new ConversationNotFoundException(conversationId));
     }
 
     private void requireMessageAllowed(Conversation conversation, UUID actorId) {

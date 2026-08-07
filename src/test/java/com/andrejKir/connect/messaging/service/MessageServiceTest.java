@@ -1,11 +1,12 @@
 package com.andrejKir.connect.messaging.service;
 
+import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.messaging.dto.request.MessageRequest;
 import com.andrejKir.connect.messaging.entity.Conversation;
 import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
 import com.andrejKir.connect.messaging.exception.NotFriendsException;
 import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
-import com.andrejKir.connect.messaging.repository.ConversationRepository;
+import com.andrejKir.connect.messaging.repository.MessageReactionRepository;
 import com.andrejKir.connect.messaging.repository.MessageRepository;
 import com.andrejKir.connect.shared.domain.UserPair;
 import com.andrejKir.connect.shared.ratelimit.RateLimitPolicy;
@@ -18,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,9 +34,13 @@ class MessageServiceTest {
     @Mock
     private MessageRepository messageRepository;
     @Mock
-    private ConversationRepository conversationRepository;
+    private MessageReactionRepository messageReactionRepository;
     @Mock
     private ConversationMemberRepository conversationMemberRepository;
+    @Mock
+    private ConversationService conversationService;
+    @Mock
+    private AppUserService appUserService;
     @Mock
     private FriendshipService friendshipService;
     @Mock
@@ -51,7 +55,8 @@ class MessageServiceTest {
 
     @Test
     void createMessage_notAMember_isRejected() {
-        when(conversationRepository.findForMember(conversationId, senderId)).thenReturn(Optional.empty());
+        when(conversationService.requireMember(conversationId, senderId))
+                .thenThrow(new ConversationNotFoundException(conversationId));
 
         assertThrows(ConversationNotFoundException.class, this::sendMessage);
 
@@ -60,8 +65,7 @@ class MessageServiceTest {
 
     @Test
     void createMessage_directConversationWithoutFriendship_isRejected() {
-        when(conversationRepository.findForMember(conversationId, senderId))
-                .thenReturn(Optional.of(directConversation()));
+        when(conversationService.requireMember(conversationId, senderId)).thenReturn(directConversation());
         when(friendshipService.areFriends(senderId, counterpartId)).thenReturn(false);
 
         assertThrows(NotFriendsException.class, this::sendMessage);
@@ -71,14 +75,15 @@ class MessageServiceTest {
 
     @Test
     void createMessage_consumesBurstLimitBeforeSustainedAndBeforeAuthorization() {
-        when(conversationRepository.findForMember(conversationId, senderId)).thenReturn(Optional.empty());
+        when(conversationService.requireMember(conversationId, senderId))
+                .thenThrow(new ConversationNotFoundException(conversationId));
 
         assertThrows(ConversationNotFoundException.class, this::sendMessage);
 
-        InOrder order = inOrder(rateLimitService, conversationRepository);
+        InOrder order = inOrder(rateLimitService, conversationService);
         order.verify(rateLimitService).check(RateLimitPolicy.MESSAGE_SEND_BURST_PER_USER, senderId.toString());
         order.verify(rateLimitService).check(RateLimitPolicy.MESSAGE_SEND_PER_USER, senderId.toString());
-        order.verify(conversationRepository).findForMember(conversationId, senderId);
+        order.verify(conversationService).requireMember(conversationId, senderId);
     }
 
     private void sendMessage() {

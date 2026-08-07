@@ -65,10 +65,10 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void clearMessaging() {
-        messageReactionRepository.deleteAll();
-        messageRepository.deleteAll();
-        conversationMemberRepository.deleteAll();
-        conversationRepository.deleteAll();
+        messageReactionRepository.deleteAllInBatch();
+        messageRepository.deleteAllInBatch();
+        conversationMemberRepository.deleteAllInBatch();
+        conversationRepository.deleteAllInBatch();
     }
 
     @BeforeEach
@@ -125,6 +125,49 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         markRead(conversationId, ana.id(), foreignMessageId);
 
         assertNull(watermarkOf(conversationId, ana.id()));
+    }
+
+    @Test
+    void conversationDetail_exposesTypeAndCounterpart() throws Exception {
+        mockMvc.perform(get("/api/v1/conversations/" + conversationId).cookie(loginAs(ana.username())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(conversationId.toString()))
+                .andExpect(jsonPath("$.type").value("DIRECT"))
+                .andExpect(jsonPath("$.counterpart.id").value(bob.id().toString()))
+                .andExpect(jsonPath("$.counterpart.displayName").value(bob.username()));
+    }
+
+    @Test
+    void conversationDetail_ofOthers_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/conversations/" + conversationId)
+                        .cookie(loginAs(register("stranger").username())))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void read_conversationOfOthers_returns404() throws Exception {
+        UUID messageId = persistMessage(conversationId, ana.id());
+        Cookie session = loginAs(register("stranger").username());
+
+        postRead(session, conversationId, messageId)
+                .andExpect(status().isNotFound());
+
+        assertNull(watermarkOf(conversationId, ana.id()));
+        assertNull(watermarkOf(conversationId, bob.id()));
+    }
+
+    @Test
+    void read_clearsUnreadInInbox() throws Exception {
+        Cookie session = loginAs(ana.username());
+        UUID messageId = persistMessage(conversationId, bob.id(), "ahoj");
+
+        expectUnread(session, true);
+
+        postRead(session, conversationId, messageId)
+                .andExpect(status().isNoContent());
+
+        expectUnread(session, false);
+        assertEquals(messageId, watermarkOf(conversationId, ana.id()));
     }
 
     @Test
@@ -202,6 +245,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
 
         UUID cursor = UUID.fromString(objectMapper.readTree(firstPage).get("nextCursor").asText());
+        assertEquals(ids.get(1), cursor);
 
         getMessages(session, conversationId, cursor)
                 .andExpect(status().isOk())
@@ -244,9 +288,17 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         messageReactionRepository.save(MessageReaction.of(messageId, appUserId, reactionType));
     }
 
-    private ResultActions getMessages(Cookie session, UUID conversationId, UUID beforeId) throws Exception {
+    private ResultActions postRead(Cookie session, UUID conversationId, UUID lastReadMessageId) throws Exception {
+        return mockMvc.perform(post("/api/v1/conversations/" + conversationId + "/read")
+                .with(csrfToken())
+                .cookie(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"lastReadMessageId\":\"" + lastReadMessageId + "\"}"));
+    }
+
+    private ResultActions getMessages(Cookie session, UUID conversationId, UUID cursor) throws Exception {
         String url = "/api/v1/conversations/" + conversationId + "/messages"
-                + (beforeId == null ? "" : "?beforeId=" + beforeId);
+                + (cursor == null ? "" : "?cursor=" + cursor);
         return mockMvc.perform(get(url).cookie(session));
     }
 
@@ -281,11 +333,13 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     }
 
     private List<UUID> persistMessages(UUID conversationId, UUID senderId, int count) {
-        List<UUID> ids = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            ids.add(persistMessage(conversationId, senderId, "sprava " + i));
-        }
-        return ids;
+        return transactionTemplate.execute(status -> {
+            List<UUID> ids = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                ids.add(persistMessage(conversationId, senderId, "sprava " + i));
+            }
+            return ids;
+        });
     }
 
     private UUID persistMessage(UUID conversationId, UUID senderId, String body) {

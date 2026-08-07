@@ -43,9 +43,9 @@ public class MessageController {
     @GetMapping("/{conversationId}/messages")
     public MessagePageResponse listMessages(
             @PathVariable UUID conversationId,
-            @RequestParam(required = false) UUID beforeId,
+            @RequestParam(required = false) UUID cursor,
             @AuthenticationPrincipal SecurityUser principal) {
 
-        return messageService.listMessages(conversationId, principal.getId(), beforeId);
+        return messageService.listMessages(conversationId, principal.getId(), cursor);
     }
 }

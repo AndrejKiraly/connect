@@ -8,6 +8,7 @@ import com.andrejKir.connect.messaging.entity.Conversation;
 import com.andrejKir.connect.messaging.enums.ConversationType;
 import com.andrejKir.connect.messaging.exception.ConversationNotFoundException;
 import com.andrejKir.connect.messaging.repository.ConversationInboxRow;
+import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
 import com.andrejKir.connect.messaging.repository.ConversationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,10 +25,14 @@ public class ConversationService {
     private static final int INBOX_PAGE_SIZE = 50;
 
     private final ConversationRepository conversationRepository;
+    private final ConversationMemberRepository conversationMemberRepository;
     private final AppUserService appUserService;
 
-    public ConversationService(ConversationRepository conversationRepository, AppUserService appUserService) {
+    public ConversationService(ConversationRepository conversationRepository,
+                               ConversationMemberRepository conversationMemberRepository,
+                               AppUserService appUserService) {
         this.conversationRepository = conversationRepository;
+        this.conversationMemberRepository = conversationMemberRepository;
         this.appUserService = appUserService;
     }
 
@@ -42,15 +47,26 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public ConversationDetailResponse getConversation(UUID conversationId, UUID actorId) {
-        Conversation conversation = conversationRepository.findForMember(conversationId, actorId)
+    public Conversation requireMember(UUID conversationId, UUID actorId) {
+        return conversationRepository.findForMember(conversationId, actorId)
                 .orElseThrow(() -> new ConversationNotFoundException(conversationId));
+    }
+
+    @Transactional(readOnly = true)
+    public ConversationDetailResponse getConversation(UUID conversationId, UUID actorId) {
+        Conversation conversation = requireMember(conversationId, actorId);
 
         AppUserPublicSummaryResponse counterpart = conversation.getType() == ConversationType.DIRECT
                 ? appUserService.getSummary(conversation.counterpartOf(actorId))
                 : null;
 
         return ConversationDetailResponse.from(conversation, counterpart);
+    }
+
+    @Transactional
+    public void markRead(UUID conversationId, UUID actorId, UUID lastReadMessageId) {
+        requireMember(conversationId, actorId);
+        conversationMemberRepository.markRead(conversationId, actorId, lastReadMessageId);
     }
 
     private Set<UUID> referencedUserIds(List<ConversationInboxRow> rows) {

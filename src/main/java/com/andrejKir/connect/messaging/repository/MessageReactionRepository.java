@@ -10,5 +10,5 @@ import java.util.UUID;
 
 public interface MessageReactionRepository extends JpaRepository<MessageReaction, MessageReactionId> {
 
-    List<MessageReaction> findByIdMessageIdInOrderByCreatedAtAsc(Collection<UUID> messageIds);
+    List<MessageReaction> findByIdMessageIdInOrderByCreatedAtAscIdAppUserIdAsc(Collection<UUID> messageIds);
 }

@@ -1,6 +1,5 @@
 package com.andrejKir.connect.messaging.dto.response;
 
-
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 
 import java.util.List;
@@ -13,4 +12,9 @@ public record MessagePageResponse(
         UUID nextCursor,
         boolean hasMore
 ) {
+    public static MessagePageResponse of(List<MessageResponse> messages,
+                                         Map<UUID, AppUserPublicSummaryResponse> users,
+                                         boolean hasMore) {
+        return new MessagePageResponse(messages, users, hasMore ? messages.getLast().id() : null, hasMore);
+    }
 }

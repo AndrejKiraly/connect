@@ -44,8 +44,4 @@ public class MessageReaction {
     public MessageReactionType getReactionType() {
         return reactionType;
     }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
 }

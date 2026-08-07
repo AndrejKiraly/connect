@@ -11,5 +11,5 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     List<Message> findByConversationIdOrderByIdDesc(UUID conversationId, Limit limit);
 
-    List<Message> findByConversationIdAndIdLessThanOrderByIdDesc(UUID conversationId, UUID before, Limit limit);
+    List<Message> findByConversationIdAndIdLessThanOrderByIdDesc(UUID conversationId, UUID cursor, Limit limit);
 }
