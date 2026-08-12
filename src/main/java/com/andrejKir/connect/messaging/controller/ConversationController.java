@@ -1,12 +1,15 @@
 package com.andrejKir.connect.messaging.controller;
 
 import com.andrejKir.connect.accounts.security.SecurityUser;
+import com.andrejKir.connect.messaging.dto.request.CreateConversationRequest;
 import com.andrejKir.connect.messaging.dto.request.MarkReadRequest;
 import com.andrejKir.connect.messaging.dto.response.ConversationDetailResponse;
 import com.andrejKir.connect.messaging.dto.response.ConversationSummaryResponse;
 import com.andrejKir.connect.messaging.service.ConversationService;
+import com.andrejKir.connect.messaging.service.ConversationService.OpenedConversation;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +43,18 @@ public class ConversationController {
             @PathVariable UUID conversationId,
             @AuthenticationPrincipal SecurityUser principal) {
         return conversationService.getConversation(conversationId, principal.getId());
+    }
+
+    @PostMapping
+    public ResponseEntity<ConversationDetailResponse> createConversation(
+            @Valid @RequestBody CreateConversationRequest conversationRequest,
+            @AuthenticationPrincipal SecurityUser principal) {
+
+        OpenedConversation opened =
+                conversationService.findOrCreateDirect(principal.getId(), conversationRequest.counterpartId());
+
+        return ResponseEntity.status(opened.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(opened.conversation());
     }
 
     @PostMapping("/{conversationId}/read")
