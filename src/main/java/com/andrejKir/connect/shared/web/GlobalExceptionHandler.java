@@ -69,7 +69,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             SelfFriendshipException.class,
             InvalidFriendshipDirectionException.class,
-            SelfConversationException.class
+            SelfConversationException.class,
+            InvalidPasswordResetTokenException.class
     })
     public ProblemDetail handleBadRequest(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
@@ -101,11 +102,6 @@ public class GlobalExceptionHandler {
     })
     public ProblemDetail handleForbidden(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, resolve(e));
-    }
-
-    @ExceptionHandler(InvalidPasswordResetTokenException.class)
-    public ProblemDetail handleInvalidPasswordResetToken(LocalizedException e){
-        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, resolve(e));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -2,6 +2,7 @@ package com.andrejKir.connect.messaging.repository;
 
 import com.andrejKir.connect.messaging.entity.Conversation;
 import com.andrejKir.connect.messaging.enums.ConversationType;
+import com.andrejKir.connect.shared.domain.UserPair;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,6 +26,10 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     Optional<Conversation> findByTypeAndUserLowIdAndUserHighId(ConversationType type,
                                                               UUID userLowId,
                                                               UUID userHighId);
+
+    default Optional<Conversation> findDirect(UserPair pair) {
+        return findByTypeAndUserLowIdAndUserHighId(ConversationType.DIRECT, pair.low(), pair.high());
+    }
 
     @Query(value = """
            SELECT c.id                         AS "id",

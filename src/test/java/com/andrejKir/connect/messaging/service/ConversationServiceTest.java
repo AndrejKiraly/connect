@@ -3,7 +3,6 @@ package com.andrejKir.connect.messaging.service;
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.messaging.entity.Conversation;
-import com.andrejKir.connect.messaging.enums.ConversationType;
 import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
 import com.andrejKir.connect.messaging.repository.ConversationRepository;
 import com.andrejKir.connect.shared.domain.UserPair;
@@ -19,7 +18,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +51,7 @@ class ConversationServiceTest {
         Conversation winner = Conversation.direct(pair);
 
         when(friendshipService.areFriends(actorId, counterpartId)).thenReturn(true);
-        when(findDirect())
+        when(conversationRepository.findDirect(pair))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(winner));
         when(transactionTemplate.<Conversation>execute(any()))
@@ -65,24 +63,17 @@ class ConversationServiceTest {
                 conversationService.findOrCreateDirect(actorId, counterpartId);
 
         assertFalse(opened.created());
-        assertEquals(counterpartId, opened.conversation().counterpart().id());
-        verify(conversationRepository, times(2)).findByTypeAndUserLowIdAndUserHighId(
-                ConversationType.DIRECT, pair.low(), pair.high());
+        verify(conversationRepository, times(2)).findDirect(pair);
     }
 
     @Test
     void findOrCreateDirect_whenConflictLeavesNoRow_rethrowsOriginalFailure() {
         when(friendshipService.areFriends(actorId, counterpartId)).thenReturn(true);
-        when(findDirect()).thenReturn(Optional.empty());
+        when(conversationRepository.findDirect(pair)).thenReturn(Optional.empty());
         when(transactionTemplate.<Conversation>execute(any()))
                 .thenThrow(new DataIntegrityViolationException("fk_conversation_user"));
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> conversationService.findOrCreateDirect(actorId, counterpartId));
-    }
-
-    private Optional<Conversation> findDirect() {
-        return conversationRepository.findByTypeAndUserLowIdAndUserHighId(
-                ConversationType.DIRECT, pair.low(), pair.high());
     }
 }

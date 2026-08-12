@@ -93,7 +93,7 @@ public class ConversationService {
 
         UserPair userPair = UserPair.of(actorId, counterpartId);
 
-        Optional<Conversation> existing = findDirect(userPair);
+        Optional<Conversation> existing = conversationRepository.findDirect(userPair);
         if (existing.isPresent()) {
             return toResult(existing.get(), counterpartId, false);
         }
@@ -108,16 +108,11 @@ public class ConversationService {
             });
             return toResult(created, counterpartId, true);
         } catch (DataIntegrityViolationException e) {
-            return toResult(findDirect(userPair).orElseThrow(() -> e), counterpartId, false);
+            return toResult(conversationRepository.findDirect(userPair).orElseThrow(() -> e), counterpartId, false);
         }
     }
 
     public record OpenedConversation(ConversationDetailResponse conversation, boolean created){}
-
-    private Optional<Conversation> findDirect(UserPair userPair) {
-        return conversationRepository.findByTypeAndUserLowIdAndUserHighId(
-                ConversationType.DIRECT, userPair.low(), userPair.high());
-    }
 
     private OpenedConversation toResult(Conversation conversation, UUID counterpartId, boolean created) {
         return new OpenedConversation(
@@ -135,5 +130,4 @@ public class ConversationService {
         }
         return userIds;
     }
-
 }
