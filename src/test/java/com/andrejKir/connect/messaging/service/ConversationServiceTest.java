@@ -2,7 +2,9 @@ package com.andrejKir.connect.messaging.service;
 
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.service.AppUserService;
+import com.andrejKir.connect.messaging.dto.response.ConversationPageResponse;
 import com.andrejKir.connect.messaging.entity.Conversation;
+import com.andrejKir.connect.messaging.repository.ConversationInboxRow;
 import com.andrejKir.connect.messaging.repository.ConversationMemberRepository;
 import com.andrejKir.connect.messaging.repository.ConversationRepository;
 import com.andrejKir.connect.shared.domain.UserPair;
@@ -15,12 +17,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +57,37 @@ class ConversationServiceTest {
     private final UUID actorId = UUID.randomUUID();
     private final UUID counterpartId = UUID.randomUUID();
     private final UserPair pair = UserPair.of(actorId, counterpartId);
+
+    @Test
+    void listConversations_whenMoreRowsThanPageSize_trimsPageAndSetsCursor() {
+        List<ConversationInboxRow> rows = new ArrayList<>();
+        for (int i = 0; i < 50; i++) {
+            rows.add(inboxRow());
+        }
+        rows.add(mock(ConversationInboxRow.class));
+
+        when(conversationRepository.findInbox(eq(actorId), isNull(), eq(""), eq(false), eq(51))).thenReturn(rows);
+        when(appUserService.getSummaries(anySet())).thenReturn(Map.of());
+
+        ConversationPageResponse page = conversationService.listConversations(actorId, null, false, null);
+
+        assertEquals(50, page.conversations().size());
+        assertTrue(page.hasMore());
+        assertEquals(rows.get(49).getLastMessageId(), page.nextCursor());
+    }
+
+    private ConversationInboxRow inboxRow() {
+        ConversationInboxRow row = mock(ConversationInboxRow.class);
+        when(row.getId()).thenReturn(UUID.randomUUID());
+        when(row.getType()).thenReturn("DIRECT");
+        when(row.getCounterpartId()).thenReturn(counterpartId);
+        when(row.getLastMessageId()).thenReturn(UUID.randomUUID());
+        when(row.getLastMessageType()).thenReturn("TEXT");
+        when(row.getLastMessageSenderId()).thenReturn(counterpartId);
+        when(row.getPreview()).thenReturn("ahoj");
+        when(row.getLastMessageAt()).thenReturn(Instant.EPOCH);
+        return row;
+    }
 
     @Test
     void findOrCreateDirect_whenConcurrentInsertWon_returnsTheWinningConversation() {

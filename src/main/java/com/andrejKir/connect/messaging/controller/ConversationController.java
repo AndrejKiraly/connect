@@ -4,7 +4,7 @@ import com.andrejKir.connect.accounts.security.SecurityUser;
 import com.andrejKir.connect.messaging.dto.request.CreateConversationRequest;
 import com.andrejKir.connect.messaging.dto.request.MarkReadRequest;
 import com.andrejKir.connect.messaging.dto.response.ConversationDetailResponse;
-import com.andrejKir.connect.messaging.dto.response.ConversationSummaryResponse;
+import com.andrejKir.connect.messaging.dto.response.ConversationPageResponse;
 import com.andrejKir.connect.messaging.service.ConversationService;
 import com.andrejKir.connect.messaging.service.ConversationService.OpenedConversation;
 import com.andrejKir.connect.shared.web.ApiPaths;
@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -33,9 +33,12 @@ public class ConversationController {
     }
 
     @GetMapping
-    public List<ConversationSummaryResponse> listConversations(
-            @AuthenticationPrincipal SecurityUser principal){
-        return conversationService.listConversations(principal.getId());
+    public ConversationPageResponse listConversations(
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "false") boolean unread,
+            @RequestParam(required = false) UUID cursor,
+            @AuthenticationPrincipal SecurityUser principal) {
+        return conversationService.listConversations(principal.getId(), q, unread, cursor);
     }
 
     @GetMapping("/{conversationId}")

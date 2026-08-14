@@ -3,6 +3,7 @@ package com.andrejKir.connect.messaging.service;
 import com.andrejKir.connect.accounts.dto.response.AppUserPublicSummaryResponse;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.messaging.dto.response.ConversationDetailResponse;
+import com.andrejKir.connect.messaging.dto.response.ConversationPageResponse;
 import com.andrejKir.connect.messaging.dto.response.ConversationSummaryResponse;
 import com.andrejKir.connect.messaging.entity.Conversation;
 import com.andrejKir.connect.messaging.entity.ConversationMember;
@@ -31,6 +32,7 @@ import java.util.UUID;
 public class ConversationService {
 
     private static final int INBOX_PAGE_SIZE = 50;
+    private static final int SEARCH_QUERY_MAX_LENGTH = 100;
 
     private final ConversationRepository conversationRepository;
     private final ConversationMemberRepository conversationMemberRepository;
@@ -51,13 +53,22 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationSummaryResponse> listConversations(UUID actorId) {
-        List<ConversationInboxRow> rows = conversationRepository.findInbox(actorId, INBOX_PAGE_SIZE);
+    public ConversationPageResponse listConversations(UUID actorId, String query, boolean unreadOnly, UUID cursor) {
+        List<ConversationInboxRow> rows = conversationRepository.findInbox(
+                actorId, cursor, normalizeQuery(query), unreadOnly, INBOX_PAGE_SIZE + 1);
+
+        boolean hasMore = rows.size() > INBOX_PAGE_SIZE;
+        if (hasMore) {
+            rows = rows.subList(0, INBOX_PAGE_SIZE);
+        }
+
         Map<UUID, AppUserPublicSummaryResponse> users = appUserService.getSummaries(referencedUserIds(rows));
 
-        return rows.stream()
+        List<ConversationSummaryResponse> conversations = rows.stream()
                 .map(row -> ConversationSummaryResponse.from(row, users, actorId))
                 .toList();
+
+        return ConversationPageResponse.of(conversations, hasMore);
     }
 
     @Transactional(readOnly = true)
@@ -118,6 +129,16 @@ public class ConversationService {
         return new OpenedConversation(
                 ConversationDetailResponse.from(conversation, appUserService.getSummary(counterpartId)),
                 created);
+    }
+
+    private static String normalizeQuery(String query) {
+        if (query == null || query.isBlank()) {
+            return "";
+        }
+        String trimmed = query.trim();
+        return trimmed.length() > SEARCH_QUERY_MAX_LENGTH
+                ? trimmed.substring(0, SEARCH_QUERY_MAX_LENGTH)
+                : trimmed;
     }
 
     private Set<UUID> referencedUserIds(List<ConversationInboxRow> rows) {

@@ -181,12 +181,12 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/conversations").cookie(loginAs(ana.username())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(conversationId.toString()))
-                .andExpect(jsonPath("$[0].counterpart.id").value(bob.id().toString()))
-                .andExpect(jsonPath("$[0].lastMessage.id").value(last.toString()))
-                .andExpect(jsonPath("$[0].lastMessage.preview").value("posledna"))
-                .andExpect(jsonPath("$[0].lastMessage.sentByMe").value(false));
+                .andExpect(jsonPath("$.conversations.length()").value(1))
+                .andExpect(jsonPath("$.conversations[0].id").value(conversationId.toString()))
+                .andExpect(jsonPath("$.conversations[0].counterpart.id").value(bob.id().toString()))
+                .andExpect(jsonPath("$.conversations[0].lastMessage.id").value(last.toString()))
+                .andExpect(jsonPath("$.conversations[0].lastMessage.preview").value("posledna"))
+                .andExpect(jsonPath("$.conversations[0].lastMessage.sentByMe").value(false));
     }
 
     @Test
@@ -198,8 +198,8 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
         mockMvc.perform(get("/api/v1/conversations").cookie(loginAs(ana.username())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(conversationId.toString()))
-                .andExpect(jsonPath("$[1].id").value(withCyril.toString()));
+                .andExpect(jsonPath("$.conversations[0].id").value(conversationId.toString()))
+                .andExpect(jsonPath("$.conversations[1].id").value(withCyril.toString()));
     }
 
     @Test
@@ -223,13 +223,13 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
 
         persistMessage(conversationId, bob.id(), "x".repeat(140));
         mockMvc.perform(get("/api/v1/conversations").cookie(session))
-                .andExpect(jsonPath("$[0].lastMessage.preview").value("x".repeat(140)))
-                .andExpect(jsonPath("$[0].lastMessage.truncated").value(false));
+                .andExpect(jsonPath("$.conversations[0].lastMessage.preview").value("x".repeat(140)))
+                .andExpect(jsonPath("$.conversations[0].lastMessage.truncated").value(false));
 
         persistMessage(conversationId, bob.id(), "y".repeat(141));
         mockMvc.perform(get("/api/v1/conversations").cookie(session))
-                .andExpect(jsonPath("$[0].lastMessage.preview").value("y".repeat(140)))
-                .andExpect(jsonPath("$[0].lastMessage.truncated").value(true));
+                .andExpect(jsonPath("$.conversations[0].lastMessage.preview").value("y".repeat(140)))
+                .andExpect(jsonPath("$.conversations[0].lastMessage.truncated").value(true));
     }
 
     @Test
@@ -305,7 +305,7 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
     private void expectUnread(Cookie session, boolean unread) throws Exception {
         mockMvc.perform(get("/api/v1/conversations").cookie(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].unread").value(unread));
+                .andExpect(jsonPath("$.conversations[0].unread").value(unread));
     }
 
     private void markRead(UUID conversationId, UUID appUserId, UUID messageId) {
