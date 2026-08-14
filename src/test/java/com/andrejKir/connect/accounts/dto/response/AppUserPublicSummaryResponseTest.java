@@ -7,7 +7,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AppUserPublicSummaryResponseTest {
 
@@ -15,7 +17,10 @@ class AppUserPublicSummaryResponseTest {
 
     @Test
     void from_activeUser_exposesDisplayName() {
-        assertEquals(DISPLAY_NAME, AppUserPublicSummaryResponse.from(user()).displayName());
+        AppUserPublicSummaryResponse response = AppUserPublicSummaryResponse.from(user());
+
+        assertEquals(DISPLAY_NAME, response.displayName());
+        assertFalse(response.deleted());
     }
 
     @Test
@@ -23,7 +28,10 @@ class AppUserPublicSummaryResponseTest {
         AppUser user = user();
         user.deactivate(Instant.now());
 
-        assertNotEquals(DISPLAY_NAME, AppUserPublicSummaryResponse.from(user).displayName());
+        AppUserPublicSummaryResponse response = AppUserPublicSummaryResponse.from(user);
+
+        assertNotEquals(DISPLAY_NAME, response.displayName());
+        assertTrue(response.deleted());
     }
 
     @Test

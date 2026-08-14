@@ -6,14 +6,15 @@ import java.util.UUID;
 
 public record AppUserPublicSummaryResponse(
         UUID id,
-        String displayName
+        String displayName,
+        boolean deleted
 ) {
     private static final String DELETED_DISPLAY_NAME = "Deleted user";
 
     public static AppUserPublicSummaryResponse from(AppUser user) {
         if (user.isDeactivated()) {
-            return new AppUserPublicSummaryResponse(user.getId(), DELETED_DISPLAY_NAME);
+            return new AppUserPublicSummaryResponse(user.getId(), DELETED_DISPLAY_NAME, true);
         }
-        return new AppUserPublicSummaryResponse(user.getId(), user.getDisplayName());
+        return new AppUserPublicSummaryResponse(user.getId(), user.getDisplayName(), false);
     }
 }
