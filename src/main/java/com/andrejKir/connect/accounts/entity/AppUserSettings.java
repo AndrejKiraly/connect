@@ -22,7 +22,56 @@ public class AppUserSettings {
     @Column(nullable = false, length = 16)
     private PostLifespan defaultPostLifespan;
 
+    @Column(nullable = false)
+    private boolean discoverableByName;
+
+    @Column(nullable = false)
+    private boolean discoverableByCode;
+
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    protected AppUserSettings() {
+    }
+
+    public AppUserSettings(UUID appUserId) {
+        this.appUserId = appUserId;
+        this.language = SupportedLanguage.EN;
+        this.defaultPostLifespan = PostLifespan.FOREVER;
+        this.discoverableByName = true;
+        this.discoverableByCode = true;
+    }
+
+    public void update(SupportedLanguage language, PostLifespan defaultPostLifespan,
+                       boolean discoverableByName, boolean discoverableByCode) {
+        this.language = language;
+        this.defaultPostLifespan = defaultPostLifespan;
+        this.discoverableByName = discoverableByName;
+        this.discoverableByCode = discoverableByCode;
+    }
+
+    public UUID getAppUserId() {
+        return appUserId;
+    }
+
+    public SupportedLanguage getLanguage() {
+        return language;
+    }
+
+    public PostLifespan getDefaultPostLifespan() {
+        return defaultPostLifespan;
+    }
+
+    public boolean isDiscoverableByName() {
+        return discoverableByName;
+    }
+
+    public boolean isDiscoverableByCode() {
+        return discoverableByCode;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
 }

@@ -280,7 +280,9 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
 
     private AppUser persistUser(String username) {
         return appUserRepository.save(new AppUser(
-                username, username + "@example.com", "x", username, "First", "Last", LocalDate.of(2000, 1, 1)));
+                username, username + "@example.com", "x", username, "First", "Last",
+                UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(),
+                LocalDate.of(2000, 1, 1)));
     }
 
     private void acceptedFriendship(UUID a, UUID b) {

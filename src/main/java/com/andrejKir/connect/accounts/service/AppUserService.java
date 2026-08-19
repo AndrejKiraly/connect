@@ -9,6 +9,7 @@ import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,11 +25,16 @@ import java.util.stream.Collectors;
 public class AppUserService {
 
     private final AppUserRepository appUserRepository;
+    private final AppUserSettingsService appUserSettingsService;
+    private final InviteCodeGenerator inviteCodeGenerator;
     private final PasswordEncoder passwordEncoder;
     private final Clock clock;
 
-    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder, Clock clock) {
+    public AppUserService(AppUserRepository appUserRepository, AppUserSettingsService appUserSettingsService,
+                          InviteCodeGenerator inviteCodeGenerator, PasswordEncoder passwordEncoder, Clock clock) {
         this.appUserRepository = appUserRepository;
+        this.appUserSettingsService = appUserSettingsService;
+        this.inviteCodeGenerator = inviteCodeGenerator;
         this.passwordEncoder = passwordEncoder;
         this.clock = clock;
     }
@@ -49,13 +55,18 @@ public class AppUserService {
                 request.displayName(),
                 request.firstName(),
                 request.lastName(),
+                inviteCodeGenerator.generate(),
                 request.birthDate()
                 );
         try {
             appUserRepository.saveAndFlush(appUser);
         } catch (DataIntegrityViolationException e) {
+            if (isInviteCodeCollision(e)) {
+                throw e;
+            }
             throw new DuplicateUserException();
         }
+        appUserSettingsService.createDefaults(appUser.getId());
         return  AppUserPrivateSummaryResponse.from(appUser);
     }
 
@@ -93,5 +104,10 @@ public class AppUserService {
 
     public boolean exists(UUID id){
         return appUserRepository.existsById(id);
+    }
+
+    private boolean isInviteCodeCollision(DataIntegrityViolationException e) {
+        return e.getCause() instanceof ConstraintViolationException violation
+                && "uq_app_user_invite_code".equals(violation.getConstraintName());
     }
 }

@@ -44,6 +44,8 @@ public class AppUser {
     @Column(nullable = false, length = 256)
     private String description;
 
+    @Column(nullable = false, length = 10)
+    private String inviteCode;
 
     @Column(nullable = false)
     private LocalDate birthDate;
@@ -61,12 +63,14 @@ public class AppUser {
     protected AppUser() {
     }
 
-    public AppUser(String username, String email, String passwordHash, String displayName, String firstName, String lastName, LocalDate birthDate) {
+    public AppUser(String username, String email, String passwordHash, String displayName,
+                   String firstName, String lastName,String inviteCode, LocalDate birthDate) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.inviteCode = inviteCode;
         this.birthDate = birthDate;
         this.displayName = resolveDisplayName(displayName, firstName, lastName);
         this.description = "";
@@ -105,6 +109,8 @@ public class AppUser {
     public String getLastName() {
         return lastName;
     }
+
+    public String getInviteCode(){return inviteCode;}
 
     public LocalDate getBirthDate() {
         return birthDate;

@@ -8,11 +8,14 @@ CREATE TABLE app_user
     first_name    VARCHAR(100) NOT NULL,
     last_name     VARCHAR(150) NOT NULL,
     description   VARCHAR(256) NOT NULL DEFAULT '',
+    invite_code   VARCHAR(10)  NOT NULL,
     birth_date    DATE         NOT NULL,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     deactivated_at TIMESTAMPTZ,
     CONSTRAINT pk_app_user PRIMARY KEY (id),
     CONSTRAINT uq_app_user_username UNIQUE (username),
-    CONSTRAINT uq_app_user_email UNIQUE (email)
+    CONSTRAINT uq_app_user_email UNIQUE (email),
+    CONSTRAINT uq_app_user_invite_code UNIQUE (invite_code),
+    CONSTRAINT chk_app_user_invite_code CHECK (invite_code ~ '^[0-9A-Z]{8,10}$')
 );

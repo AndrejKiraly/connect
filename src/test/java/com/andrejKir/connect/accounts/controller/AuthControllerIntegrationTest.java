@@ -2,10 +2,13 @@ package com.andrejKir.connect.accounts.controller;
 
 
 import com.andrejKir.connect.accounts.dto.request.RegisterRequest;
+import com.andrejKir.connect.accounts.dto.response.AppUserPrivateSummaryResponse;
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
+import com.andrejKir.connect.accounts.entity.AppUserSettings;
 import com.andrejKir.connect.accounts.repository.AppUserRepository;
+import com.andrejKir.connect.accounts.repository.AppUserSettingsRepository;
 import com.andrejKir.connect.accounts.service.AppUserService;
 import com.andrejKir.connect.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,8 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     AppUserService appUserService;
     @Autowired
     AppUserRepository appUserRepository;
+    @Autowired
+    AppUserSettingsRepository appUserSettingsRepository;
 
     @BeforeEach
     void seedKnownUser() {
@@ -112,6 +117,18 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
         assertFalse(responseBody.contains("{max}"));
         assertTrue(responseBody.contains("128"));
+    }
+
+    @Test
+    void registerUser_createsDiscoverableSettings() {
+        AppUserPrivateSummaryResponse registered = appUserService.registerUser(new RegisterRequest(
+                "settings@example.com", "settingsuser", STRONG_PASSWORD,
+                "NewUser", "Lubo", "Ander", LocalDate.of(2000, 1, 1)));
+
+        AppUserSettings settings = appUserSettingsRepository.findById(registered.id()).orElseThrow();
+
+        assertTrue(settings.isDiscoverableByName());
+        assertTrue(settings.isDiscoverableByCode());
     }
 
     @Test

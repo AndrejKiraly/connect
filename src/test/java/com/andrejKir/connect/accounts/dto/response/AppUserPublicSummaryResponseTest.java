@@ -44,6 +44,6 @@ class AppUserPublicSummaryResponseTest {
 
     private static AppUser user() {
         return new AppUser("lubo", "lubo@example.com", "hash", DISPLAY_NAME,
-                "Lubo", "Ander", LocalDate.of(2000, 1, 1));
+                "Lubo", "Ander", "ABCD1234", LocalDate.of(2000, 1, 1));
     }
 }
