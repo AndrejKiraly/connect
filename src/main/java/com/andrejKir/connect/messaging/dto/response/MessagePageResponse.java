@@ -9,12 +9,6 @@ import java.util.UUID;
 public record MessagePageResponse(
         List<MessageResponse> messages,
         Map<UUID, AppUserPublicSummaryResponse> users,
-        UUID nextCursor,
-        boolean hasMore
+        UUID nextCursor
 ) {
-    public static MessagePageResponse of(List<MessageResponse> messages,
-                                         Map<UUID, AppUserPublicSummaryResponse> users,
-                                         boolean hasMore) {
-        return new MessagePageResponse(messages, users, hasMore ? messages.getLast().id() : null, hasMore);
-    }
 }

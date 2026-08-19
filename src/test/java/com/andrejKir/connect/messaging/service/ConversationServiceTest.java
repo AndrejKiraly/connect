@@ -27,7 +27,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -72,7 +71,6 @@ class ConversationServiceTest {
         ConversationPageResponse page = conversationService.listConversations(actorId, null, false, null);
 
         assertEquals(50, page.conversations().size());
-        assertTrue(page.hasMore());
         assertEquals(rows.get(49).getLastMessageId(), page.nextCursor());
     }
 

@@ -240,7 +240,6 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
         String firstPage = getMessages(session, conversationId, null)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages.length()").value(50))
-                .andExpect(jsonPath("$.hasMore").value(true))
                 .andExpect(jsonPath("$.messages[0].id").value(ids.getLast().toString()))
                 .andReturn().getResponse().getContentAsString();
 
@@ -251,7 +250,6 @@ public class MessageIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages.length()").value(1))
                 .andExpect(jsonPath("$.messages[0].id").value(ids.getFirst().toString()))
-                .andExpect(jsonPath("$.hasMore").value(false))
                 .andExpect(jsonPath("$.nextCursor").doesNotExist());
     }
 

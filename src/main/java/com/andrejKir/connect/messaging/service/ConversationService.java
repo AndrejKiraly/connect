@@ -61,6 +61,7 @@ public class ConversationService {
         if (hasMore) {
             rows = rows.subList(0, INBOX_PAGE_SIZE);
         }
+        UUID nextCursor = hasMore ? rows.getLast().getLastMessageId() : null;
 
         Map<UUID, AppUserPublicSummaryResponse> users = appUserService.getSummaries(referencedUserIds(rows));
 
@@ -68,7 +69,7 @@ public class ConversationService {
                 .map(row -> ConversationSummaryResponse.from(row, users, actorId))
                 .toList();
 
-        return ConversationPageResponse.of(conversations, hasMore);
+        return new ConversationPageResponse(conversations, nextCursor);
     }
 
     @Transactional(readOnly = true)

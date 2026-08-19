@@ -87,6 +87,7 @@ public class MessageService {
         if (hasMore) {
             page = page.subList(0, MESSAGE_PAGE_SIZE);
         }
+        UUID nextCursor = hasMore ? page.getLast().getId() : null;
 
         List<MessageReaction> reactions = findReactions(page);
         Map<UUID, List<MessageReactionResponse>> reactionsByMessage = groupByMessage(reactions);
@@ -96,7 +97,7 @@ public class MessageService {
                 .map(message -> MessageResponse.from(message, reactionsByMessage.getOrDefault(message.getId(), List.of())))
                 .toList();
 
-        return MessagePageResponse.of(messages, users, hasMore);
+        return new MessagePageResponse(messages, users, nextCursor);
     }
 
     private List<MessageReaction> findReactions(List<Message> page) {

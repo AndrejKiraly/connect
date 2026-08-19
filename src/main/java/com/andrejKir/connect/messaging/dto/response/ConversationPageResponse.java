@@ -5,13 +5,6 @@ import java.util.UUID;
 
 public record ConversationPageResponse(
         List<ConversationSummaryResponse> conversations,
-        UUID nextCursor,
-        boolean hasMore
+        UUID nextCursor
 ) {
-    public static ConversationPageResponse of(List<ConversationSummaryResponse> conversations, boolean hasMore) {
-        return new ConversationPageResponse(
-                conversations,
-                hasMore ? conversations.getLast().lastMessage().id() : null,
-                hasMore);
-    }
 }
