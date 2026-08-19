@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(ApiPaths.V1 + "/friendship")
+@RequestMapping(ApiPaths.V1 + "/friendships")
 public class FriendshipController {
 
     private final FriendshipService friendshipService;

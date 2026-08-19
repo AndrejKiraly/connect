@@ -60,7 +60,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
 
         String body = "{\"targetId\":\"" + userB.id() + "\",\"requesterId\":\"" + userB.id() + "\"}";
 
-        mockMvc.perform(post("/api/v1/friendship")
+        mockMvc.perform(post("/api/v1/friendships")
                         .with(csrfToken())
                         .cookie(sessionA)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,7 +74,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void create_unauthenticated_returns401() throws Exception {
-        mockMvc.perform(post("/api/v1/friendship")
+        mockMvc.perform(post("/api/v1/friendships")
                         .with(csrfToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetId\":\"" + userB.id() + "\"}"))
@@ -85,7 +85,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     void create_unknownTarget_returns404() throws Exception {
         Cookie sessionA = loginAs("userA");
 
-        mockMvc.perform(post("/api/v1/friendship")
+        mockMvc.perform(post("/api/v1/friendships")
                         .with(csrfToken())
                         .cookie(sessionA)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +98,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         Friendship pending = seedPendingRequest(userA.id(), userB.id());
         Cookie sessionB = loginAs("userB");
 
-        mockMvc.perform(post("/api/v1/friendship/" + pending.getId() + "/accept")
+        mockMvc.perform(post("/api/v1/friendships/" + pending.getId() + "/accept")
                         .with(csrfToken())
                         .cookie(sessionB))
                 .andExpect(status().isOk());
@@ -112,7 +112,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         Friendship pending = seedPendingRequest(userA.id(), userB.id());
         Cookie sessionA = loginAs("userA");
 
-        mockMvc.perform(post("/api/v1/friendship/" + pending.getId() + "/accept")
+        mockMvc.perform(post("/api/v1/friendships/" + pending.getId() + "/accept")
                         .with(csrfToken())
                         .cookie(sessionA))
                 .andExpect(status().isForbidden());
@@ -123,7 +123,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         Friendship pending = seedPendingRequest(userA.id(), userB.id());
         Cookie sessionC = loginAs("userC");
 
-        mockMvc.perform(post("/api/v1/friendship/" + pending.getId() + "/accept")
+        mockMvc.perform(post("/api/v1/friendships/" + pending.getId() + "/accept")
                         .with(csrfToken())
                         .cookie(sessionC))
                 .andExpect(status().isNotFound());
@@ -136,7 +136,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         friendshipRepository.save(accepted);
         Cookie sessionB = loginAs("userB");
 
-        mockMvc.perform(post("/api/v1/friendship/" + accepted.getId() + "/accept")
+        mockMvc.perform(post("/api/v1/friendships/" + accepted.getId() + "/accept")
                         .with(csrfToken())
                         .cookie(sessionB))
                 .andExpect(status().isConflict());
@@ -147,7 +147,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         Friendship pending = seedPendingRequest(userA.id(), userB.id());
         Cookie sessionB = loginAs("userB");
 
-        mockMvc.perform(post("/api/v1/friendship/" + pending.getId() + "/decline")
+        mockMvc.perform(post("/api/v1/friendships/" + pending.getId() + "/decline")
                         .with(csrfToken())
                         .cookie(sessionB))
                 .andExpect(status().isOk());
@@ -161,7 +161,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         RequestGroup g = seedRequests(userA.id());
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/friends").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/friends").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[*].counterpart.id",
@@ -173,7 +173,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         RequestGroup g = seedRequests(userA.id());
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/requests").param("direction", "incoming").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/requests").param("direction", "incoming").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[*].counterpart.id",
@@ -185,7 +185,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         RequestGroup g = seedRequests(userA.id());
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/requests").param("direction", "outgoing").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/requests").param("direction", "outgoing").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[*].counterpart.id",
@@ -197,7 +197,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         seedRequests(userA.id());
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/friends").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/friends").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].counterpart.displayName").exists())
                 .andExpect(jsonPath("$[0].counterpart.username").doesNotExist());
@@ -207,7 +207,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     void requests_invalidDirection_returns400() throws Exception {
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/requests").param("direction", "sideways").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/requests").param("direction", "sideways").cookie(session))
                 .andExpect(status().isBadRequest());
     }
 
@@ -215,7 +215,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
     void friends_whenNone_returnsEmptyList() throws Exception {
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/friends").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/friends").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -225,7 +225,7 @@ public class FriendshipIntegrationTest extends AbstractIntegrationTest {
         seedRequests(userA.id());
         Cookie session = loginAs("userA");
 
-        mockMvc.perform(get("/api/v1/friendship/friends").cookie(session))
+        mockMvc.perform(get("/api/v1/friendships/friends").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
 
