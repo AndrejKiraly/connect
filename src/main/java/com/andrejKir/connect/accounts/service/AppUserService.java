@@ -170,5 +170,4 @@ public class AppUserService {
         return e.getCause() instanceof ConstraintViolationException violation
                 && "uq_app_user_invite_code".equals(violation.getConstraintName());
     }
-
 }

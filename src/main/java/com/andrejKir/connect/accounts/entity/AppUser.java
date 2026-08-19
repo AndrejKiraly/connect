@@ -64,7 +64,7 @@ public class AppUser {
     }
 
     public AppUser(String username, String email, String passwordHash, String displayName,
-                   String firstName, String lastName,String inviteCode, LocalDate birthDate) {
+                   String firstName, String lastName, String inviteCode, LocalDate birthDate) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;

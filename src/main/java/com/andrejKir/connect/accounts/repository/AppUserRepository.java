@@ -43,9 +43,9 @@ public interface AppUserRepository extends JpaRepository< AppUser, UUID> {
 
     // TODO: decide if we let actor find himself via code
     @Query("""
-           select u from AppUser u, AppUserSettings s
-            where s.appUserId = u.id
-              and u.inviteCode = :inviteCode
+           select u from AppUser u
+             join AppUserSettings s on s.appUserId = u.id
+            where u.inviteCode = :inviteCode
               and u.deactivatedAt is null
               and s.discoverableByCode
            """)

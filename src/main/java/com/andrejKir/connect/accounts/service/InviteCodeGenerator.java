@@ -31,14 +31,9 @@ public class InviteCodeGenerator {
 
     private String randomCode(){
         StringBuilder code = new StringBuilder(LENGTH);
-        for (int i = 0; i<LENGTH; i++){
+        for (int i = 0; i < LENGTH; i++) {
             code.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
         }
-    return code.toString();
+        return code.toString();
     }
-
-
-
-
-
 }

@@ -7,8 +7,11 @@ import com.andrejKir.connect.accounts.service.AppUserSettingsService;
 import com.andrejKir.connect.shared.web.ApiPaths;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(ApiPaths.V1 + "/users/me/settings")
@@ -21,14 +24,12 @@ public class AppUserSettingsController {
     }
 
     @GetMapping
-    public AppUserSettingsResponse showSettings(@AuthenticationPrincipal SecurityUser principal){
-        AppUserSettingsResponse appUserSettingsResponse = appUserSettingsService.showSettings(principal.getId());
-        return appUserSettingsResponse;
+    public AppUserSettingsResponse showSettings(@AuthenticationPrincipal SecurityUser principal) {
+        return appUserSettingsService.showSettings(principal.getId());
     }
 
     @PutMapping
-    public AppUserSettingsResponse changeSettings(@Valid @RequestBody AppUserSettingsRequest appUserSettingsRequest, @AuthenticationPrincipal SecurityUser principal){
-        AppUserSettingsResponse appUserSettingsResponse = appUserSettingsService.changeSettings(appUserSettingsRequest, principal.getId());
-        return appUserSettingsResponse;
+    public AppUserSettingsResponse changeSettings(@Valid @RequestBody AppUserSettingsRequest appUserSettingsRequest, @AuthenticationPrincipal SecurityUser principal) {
+        return appUserSettingsService.changeSettings(appUserSettingsRequest, principal.getId());
     }
 }
