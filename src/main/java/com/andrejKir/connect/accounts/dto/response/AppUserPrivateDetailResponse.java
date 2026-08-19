@@ -13,7 +13,8 @@ public record AppUserPrivateDetailResponse(
         String firstName,
         String lastName,
         LocalDate birthDate,
-        String description
+        String description,
+        String inviteCode
 ) {
     public static AppUserPrivateDetailResponse from(AppUser user) {
         return new AppUserPrivateDetailResponse(
@@ -24,6 +25,7 @@ public record AppUserPrivateDetailResponse(
                 user.getFirstName(),
                 user.getLastName(),
                 user.getBirthDate(),
-                user.getDescription());
+                user.getDescription(),
+                user.getInviteCode());
     }
 }

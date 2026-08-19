@@ -1,5 +1,6 @@
 package com.andrejKir.connect.shared.web;
 
+import com.andrejKir.connect.accounts.exception.AppUserNotFoundException;
 import com.andrejKir.connect.accounts.exception.DuplicateEmailException;
 import com.andrejKir.connect.accounts.exception.DuplicateUserException;
 import com.andrejKir.connect.accounts.exception.DuplicateUsernameException;
@@ -90,7 +91,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             FriendshipTargetNotFoundException.class,
             FriendshipRequestNotFoundException.class,
-            ConversationNotFoundException.class
+            ConversationNotFoundException.class,
+            AppUserNotFoundException.class
     })
     public ProblemDetail handleNotFound(LocalizedException e){
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, resolve(e));

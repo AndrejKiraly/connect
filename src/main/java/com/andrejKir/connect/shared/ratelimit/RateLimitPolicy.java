@@ -11,7 +11,9 @@ public enum RateLimitPolicy {
     PASSWORD_RESET_PER_IP(10, Duration.ofHours(1)),
     FRIENDSHIP_REQUEST_PER_USER(110, Duration.ofHours(1)),
     MESSAGE_SEND_BURST_PER_USER(60, Duration.ofMinutes(1)),
-    MESSAGE_SEND_PER_USER(1500, Duration.ofHours(12));
+    MESSAGE_SEND_PER_USER(1500, Duration.ofHours(12)),
+    USER_SEARCH_PER_USER(100, Duration.ofHours(1)),
+    USER_CODE_LOOKUP_PER_USER(40, Duration.ofHours(1));
 
     private final long capacity;
     private final Duration window;
