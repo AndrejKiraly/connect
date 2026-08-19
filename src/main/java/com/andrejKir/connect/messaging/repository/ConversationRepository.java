@@ -41,8 +41,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
                   left(lm.body, 140)           AS "preview",
                   (char_length(lm.body) > 140) AS "truncated",
                   lm.created_at                AS "lastMessageAt",
-                  (cm.last_read_message_id IS NULL
-                   OR lm.id > cm.last_read_message_id) AS "unread"
+                  unread.is_unread             AS "unread"
              FROM conversation_member cm
              JOIN conversation c ON c.id = cm.conversation_id
              JOIN LATERAL (SELECT m.id, m.type, m.sender_id, m.body, m.created_at
@@ -52,17 +51,18 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
                             LIMIT 1) lm ON true
              CROSS JOIN LATERAL (SELECT CASE WHEN c.user_low_id = cm.app_user_id
                                              THEN c.user_high_id ELSE c.user_low_id END) cp(id)
+             CROSS JOIN LATERAL (SELECT cm.last_read_message_id IS NULL
+                                         OR lm.id > cm.last_read_message_id) unread(is_unread)
             WHERE cm.app_user_id = :actorId
               AND (CAST(:cursor AS uuid) IS NULL OR lm.id < CAST(:cursor AS uuid))
-              AND (NOT CAST(:unreadOnly AS boolean)
-                   OR cm.last_read_message_id IS NULL
-                   OR lm.id > cm.last_read_message_id)
-              AND (:query = '' OR EXISTS (SELECT 1
-                                            FROM app_user u
-                                           WHERE u.id = cp.id
-                                             AND u.deactivated_at IS NULL
-                                             AND strpos(lower(unaccent(u.display_name)),
-                                                        lower(unaccent(:query))) > 0))
+              AND (NOT :unreadOnly OR unread.is_unread)
+              AND (CASE WHEN :query = '' THEN true ELSE EXISTS (
+                       SELECT 1
+                         FROM app_user u
+                        WHERE u.id = cp.id
+                          AND u.deactivated_at IS NULL
+                          AND strpos(lower(unaccent(u.display_name)),
+                                     lower(unaccent(:query))) > 0) END)
             ORDER BY lm.id DESC
             LIMIT :limit
            """, nativeQuery = true)

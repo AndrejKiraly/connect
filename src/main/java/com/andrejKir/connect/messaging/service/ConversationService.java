@@ -132,7 +132,7 @@ public class ConversationService {
     }
 
     private static String normalizeQuery(String query) {
-        if (query == null || query.isBlank()) {
+        if (query == null) {
             return "";
         }
         String trimmed = query.trim();
